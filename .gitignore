@@ -1,0 +1,7 @@
+data/raw/*
+data/processed/*
+.vscode/
+__pycache__/
+*.pyc
+tests/__pycache__/
+src/__pycache__/

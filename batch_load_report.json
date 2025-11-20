@@ -1,0 +1,12 @@
+{
+  "start_time": "2025-10-24T17:24:37.118221",
+  "end_time": "2025-10-24T17:24:44.563598",
+  "duration_seconds": 7.445377,
+  "statistics": {
+    "total": 10,
+    "success": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "errors": []
+}
