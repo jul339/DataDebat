@@ -369,6 +369,7 @@ class ANDebatsExtractor:
         # Extraire seulement orateur_nom et texte
         filtered_docs = [
             {
+                'fonction': doc.get('orateur_fonction', 'N/A'),
                 'para_id': doc.get('para_id', ''),
                 'orateur_nom': doc.get('orateur_nom', 'N/A'),
                 'texte': doc.get('texte', '')
@@ -431,19 +432,22 @@ class ANDebatsExtractor:
                             para_data['orateur_nom'] = orateur_info['nom']
                         if orateur_info.get('fonction'):
                             para_data['orateur_fonction'] = orateur_info['fonction']
-                    
-                        if para.text:                
-                            para_data['texte'] = self.clean_texte(para.text)
-                    
+                        if para.find('QualiteMouvement') is not None :
+                            if para_data['orateur_fonction'] is None :
+                                para_data['orateur_fonction'] = para.find('QualiteMouvement').text
+                            else :
+                                para_data['orateur_fonction'] += " - " + para.find('QualiteMouvement').text
+                        if para.find('Orateur').tail is not None:
+                            para_data['texte'] = para.find('Orateur').tail.strip()
                         para_data['extraction_timestamp'] = datetime.now().isoformat()
                         para_data['vote_present'] = False
                         documents.append(para_data)
                         last_para = para_data
             
             print(f"Extracted {len(documents)} paragraphs from section {section_data.get('section_id', '')}")
-            documents = [doc for doc in documents if doc.get('texte') is not None or len(doc.get('texte', '')) >= 10]
+            # documents = [doc for doc in documents if doc.get('texte') is not None or len(doc.get('texte', '')) >= 10]
             documents
-            print(f"Extracted {len(documents)} paragraphs from section {section_data.get('section_id', '')}")
+            # print(f"Extracted {len(documents)} paragraphs from section {section_data.get('section_id', '')}")
 
             # Extraire les résultats de vote s'ils existent
             # vote_data = self.extract_vote(section)
