@@ -20,24 +20,24 @@ from elasticsearch.exceptions import ConnectionError, RequestError
 class ANDebatsExtractor:
     """Extracteur et indexeur de débats de l'Assemblée Nationale"""
     
-    def __init__(self, es_host: str = "http://localhost:9200"):
-        """
-        Initialise la connexion Elasticsearch
+    # def __init__(self, es_host: str = "http://localhost:9200"):
+    #     """
+    #     Initialise la connexion Elasticsearch
         
-        Args:
-            es_host: URL du serveur Elasticsearch
-        """
-        self.es = Elasticsearch(es_host)
-        self.index_name = "debats_assemblee_nationale"
+    #     Args:
+    #         es_host: URL du serveur Elasticsearch
+    #     """
+    #     self.es = Elasticsearch(es_host)
+    #     self.index_name = "debats_assemblee_nationale"
         
-        # Vérifier la connexion
-        try:
-            if self.es.ping():
-                print(f"✓ Connexion établie avec Elasticsearch")
-            else:
-                raise ConnectionError("Impossible de se connecter à Elasticsearch")
-        except Exception as e:
-            raise ConnectionError(f"Erreur de connexion à Elasticsearch: {e}")
+    #     # Vérifier la connexion
+    #     try:
+    #         if self.es.ping():
+    #             print(f"✓ Connexion établie avec Elasticsearch")
+    #         else:
+    #             raise ConnectionError("Impossible de se connecter à Elasticsearch")
+    #     except Exception as e:
+    #         raise ConnectionError(f"Erreur de connexion à Elasticsearch: {e}")
     
     def create_index(self):
         """Crée l'index Elasticsearch avec le mapping optimisé pour l'analyse linguistique"""
@@ -355,6 +355,34 @@ class ANDebatsExtractor:
                 texts.append(child.tail)
         return ' '.join(texts)
     
+
+    def save_documents_to_file(self, documents: List[Dict], output_file: str = "documents_output.json"):
+        """
+        Sauvegarde les documents extraits dans un fichier JSON
+        
+        Args:
+            documents: Liste des documents à sauvegarder
+            output_file: Chemin du fichier de sortie
+        """
+        import json
+        
+        # Extraire seulement orateur_nom et texte
+        filtered_docs = [
+            {
+                'para_id': doc.get('para_id', ''),
+                'orateur_nom': doc.get('orateur_nom', 'N/A'),
+                'texte': doc.get('texte', '')
+            }
+            for doc in documents
+        ]
+        
+        # Sauvegarder en JSON
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(filtered_docs, f, indent=2, ensure_ascii=False)
+        
+        print(f"✓ {len(filtered_docs)} documents sauvegardés dans {output_file}")
+
+
     def extract_sections(self, root: ET.Element, metadata: Dict) -> List[Dict]:
         """
         Extrait toutes les sections et interventions du débat
@@ -383,35 +411,46 @@ class ANDebatsExtractor:
                     section_data['section_titre'] = self.clean_text(
                         self.extract_text_recursive(intitule)
                     )
-            
+            last_para = None
             # Extraire tous les paragraphes de cette section
             for para in section.findall('.//Para'):
                 para_data = section_data.copy()
-                para_data['para_id'] = para.get('Ident', '')
-                
-                # Extraire l'orateur
-                orateur_info = self.extract_orateur(para)
-                if orateur_info.get('nom'):
-                    para_data['orateur_nom'] = orateur_info['nom']
-                if orateur_info.get('fonction'):
-                    para_data['orateur_fonction'] = orateur_info['fonction']
-                
-                # Extraire le texte complet du paragraphe
-                texte = self.extract_text_recursive(para)
-                para_data['texte'] = self.clean_text(texte)
-                
-                # Ne garder que les paragraphes avec du contenu
-                if para_data['texte'] and len(para_data['texte']) > 10:
-                    para_data['extraction_timestamp'] = datetime.now().isoformat()
-                    para_data['vote_present'] = False
-                    documents.append(para_data)
+                if para.get('idsyceron') is not None :
+                    if last_para is not None and para.get('idsyceron') == last_para['para_id']:
+                        if para.text:
+                            if last_para.get("texte") is not None:
+                                last_para['texte'] += para.text
+                            else:
+                                last_para['texte'] = para.text
+                    else:
+                        para_data['para_id'] = para.get('idsyceron')
+
+                        orateur_info = self.extract_orateur(para)
+                    
+                        if orateur_info.get('nom'):
+                            para_data['orateur_nom'] = orateur_info['nom']
+                        if orateur_info.get('fonction'):
+                            para_data['orateur_fonction'] = orateur_info['fonction']
+                    
+                        if para.text:                
+                            para_data['texte'] = self.clean_texte(para.text)
+                    
+                        para_data['extraction_timestamp'] = datetime.now().isoformat()
+                        para_data['vote_present'] = False
+                        documents.append(para_data)
+                        last_para = para_data
             
+            print(f"Extracted {len(documents)} paragraphs from section {section_data.get('section_id', '')}")
+            documents = [doc for doc in documents if doc.get('texte') is not None or len(doc.get('texte', '')) >= 10]
+            documents
+            print(f"Extracted {len(documents)} paragraphs from section {section_data.get('section_id', '')}")
+
             # Extraire les résultats de vote s'ils existent
-            vote_data = self.extract_vote(section)
-            if vote_data:
-                # Ajouter les données de vote au dernier paragraphe de la section
-                if documents and documents[-1].get('section_id') == section_data.get('section_id'):
-                    documents[-1].update(vote_data)
+            # vote_data = self.extract_vote(section)
+            # if vote_data:
+            #     # Ajouter les données de vote au dernier paragraphe de la section
+            #     if documents and documents[-1].get('section_id') == section_data.get('section_id'):
+            #         documents[-1].update(vote_data)
         
         return documents
     
@@ -469,11 +508,14 @@ class ANDebatsExtractor:
             
             # Étape 3: Extraire les sections et interventions
             documents = self.extract_sections(root, metadata)
+            output_file = "documents_output.json"
+            self.save_documents_to_file(documents, output_file)
+
             print(f"✓ {len(documents)} interventions extraites")
             
             # Étape 4: Indexer dans Elasticsearch
-            if documents:
-                self.bulk_index(documents)
+            # if documents:
+            #     self.bulk_index(documents)
             
             print(f"✓ Traitement terminé avec succès")
             
@@ -516,21 +558,21 @@ def main():
     DATA_DIR = "./data/raw"  # Répertoire contenant les fichiers TAZ
     
     # Créer l'extracteur
-    extractor = ANDebatsExtractor(es_host=ES_HOST)
+    extractor = ANDebatsExtractor()
     
     # Créer l'index
-    extractor.create_index()
+    # extractor.create_index()
     
     # Traiter les fichiers
     # Option 1: Traiter un seul fichier
-    # extractor.process_taz_file("./AN_2022001.taz")
+    extractor.process_taz_file("./data/raw/2022/AN_2022001.taz")
     
     # Option 2: Traiter tous les fichiers d'un répertoire
-    extractor.process_directory(DATA_DIR)
+    # extractor.process_directory(DATA_DIR)
     
     # Vérifier l'indexation
-    count = extractor.es.count(index=extractor.index_name)
-    print(f"\n📊 Total de documents indexés: {count['count']}")
+    # count = extractor.es.count(index=extractor.index_name)
+    # print(f"\n📊 Total de documents indexés: {count['count']}")
 
 
 if __name__ == "__main__":
