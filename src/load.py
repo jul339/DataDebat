@@ -20,24 +20,24 @@ from elasticsearch.exceptions import ConnectionError, RequestError
 class ANDebatsExtractor:
     """Extracteur et indexeur de débats de l'Assemblée Nationale"""
     
-    # def __init__(self, es_host: str = "http://localhost:9200"):
-    #     """
-    #     Initialise la connexion Elasticsearch
+    def __init__(self, es_host: str = "http://localhost:9200"):
+        """
+        Initialise la connexion Elasticsearch
         
-    #     Args:
-    #         es_host: URL du serveur Elasticsearch
-    #     """
-    #     self.es = Elasticsearch(es_host)
-    #     self.index_name = "debats_assemblee_nationale"
+        Args:
+            es_host: URL du serveur Elasticsearch
+        """
+        self.es = Elasticsearch(es_host)
+        self.index_name = "debats_assemblee_nationale"
         
-    #     # Vérifier la connexion
-    #     try:
-    #         if self.es.ping():
-    #             print(f"✓ Connexion établie avec Elasticsearch")
-    #         else:
-    #             raise ConnectionError("Impossible de se connecter à Elasticsearch")
-    #     except Exception as e:
-    #         raise ConnectionError(f"Erreur de connexion à Elasticsearch: {e}")
+        # Vérifier la connexion
+        try:
+            if self.es.ping():
+                print(f"✓ Connexion établie avec Elasticsearch")
+            else:
+                raise ConnectionError("Impossible de se connecter à Elasticsearch")
+        except Exception as e:
+            raise ConnectionError(f"Erreur de connexion à Elasticsearch: {e}")
     
     def create_index(self):
         """Crée l'index Elasticsearch avec le mapping optimisé pour l'analyse linguistique"""
@@ -267,7 +267,7 @@ class ANDebatsExtractor:
         
         return metadata
     
-    def clean_text(self, text: str) -> str:
+    def clean_text(self, text: str) -> str: 
         """Nettoie le texte en supprimant les espaces multiples et caractères parasites"""
         if not text:
             return ""
@@ -412,37 +412,34 @@ class ANDebatsExtractor:
                     section_data['section_titre'] = self.clean_text(
                         self.extract_text_recursive(intitule)
                     )
-            last_para = None
+            last_para_data = None
             # Extraire tous les paragraphes de cette section
             for para in section.findall('.//Para'):
+                para_id = para.get('idsyceron')
+                
+                # Ignorer les paragraphes sans identifiant
+                if para_id is None:
+                    continue
+                
+                # Cas 1: Continuation du paragraphe précédent (même id)
+                if last_para_data is not None and para_id == last_para_data['para_id']:
+                    last_para_data['texte'] += " " + self.extract_text_recursive(para)
+                    continue
+                
+                # Cas 2: Nouveau paragraphe
                 para_data = section_data.copy()
-                if para.get('idsyceron') is not None :
-                    if last_para is not None and para.get('idsyceron') == last_para['para_id']:
-                        if para.text:
-                            if last_para.get("texte") is not None:
-                                last_para['texte'] += para.text
-                            else:
-                                last_para['texte'] = para.text
-                    else:
-                        para_data['para_id'] = para.get('idsyceron')
-
-                        orateur_info = self.extract_orateur(para)
-                    
-                        if orateur_info.get('nom'):
-                            para_data['orateur_nom'] = orateur_info['nom']
-                        if orateur_info.get('fonction'):
-                            para_data['orateur_fonction'] = orateur_info['fonction']
-                        if para.find('QualiteMouvement') is not None :
-                            if para_data['orateur_fonction'] is None :
-                                para_data['orateur_fonction'] = para.find('QualiteMouvement').text
-                            else :
-                                para_data['orateur_fonction'] += " - " + para.find('QualiteMouvement').text
-                        if para.find('Orateur').tail is not None:
-                            para_data['texte'] = para.find('Orateur').tail.strip()
-                        para_data['extraction_timestamp'] = datetime.now().isoformat()
-                        para_data['vote_present'] = False
-                        documents.append(para_data)
-                        last_para = para_data
+                para_data['para_id'] = para_id
+                # Extraction de l'orateur
+                orateur_info = self.extract_orateur(para)
+                para_data['orateur_nom'] = orateur_info.get('nom')
+                para_data['orateur_fonction'] = orateur_info.get('fonction')
+                para_data['extraction_timestamp'] = datetime.now().isoformat()
+                para_data['vote_present'] = False
+                
+                para_data['texte'] = self.extract_text_recursive(para)
+                
+                documents.append(para_data)
+                last_para_data = para_data
             
             print(f"Extracted {len(documents)} paragraphs from section {section_data.get('section_id', '')}")
             # documents = [doc for doc in documents if doc.get('texte') is not None or len(doc.get('texte', '')) >= 10]
@@ -512,14 +509,14 @@ class ANDebatsExtractor:
             
             # Étape 3: Extraire les sections et interventions
             documents = self.extract_sections(root, metadata)
-            output_file = "documents_output.json"
+            output_file = f"./data/transformed/2022/{metadata.get('date_seance', 'N/A')}.json"
             self.save_documents_to_file(documents, output_file)
 
             print(f"✓ {len(documents)} interventions extraites")
             
             # Étape 4: Indexer dans Elasticsearch
-            # if documents:
-            #     self.bulk_index(documents)
+            if documents:
+                self.bulk_index(documents)
             
             print(f"✓ Traitement terminé avec succès")
             
@@ -559,17 +556,17 @@ def main():
     
     # Configuration
     ES_HOST = "http://localhost:9200"
-    DATA_DIR = "./data/raw"  # Répertoire contenant les fichiers TAZ
+    DATA_DIR = "./data/raw/2022"  # Répertoire contenant les fichiers TAZ
     
     # Créer l'extracteur
     extractor = ANDebatsExtractor()
     
     # Créer l'index
-    # extractor.create_index()
+    extractor.create_index()
     
     # Traiter les fichiers
     # Option 1: Traiter un seul fichier
-    extractor.process_taz_file("./data/raw/2022/AN_2022001.taz")
+    extractor.process_taz_file("./data/raw/2023/AN_2023003.taz")
     
     # Option 2: Traiter tous les fichiers d'un répertoire
     # extractor.process_directory(DATA_DIR)
