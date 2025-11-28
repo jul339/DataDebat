@@ -84,12 +84,6 @@ class ESConnection:
                     "sous_section_titre": {"type": "text", "analyzer": "french"},
                     "niveau_section": {"type": "integer"},
                     
-                    # Vote (si présent)
-                    "vote_present": {"type": "boolean"},
-                    "nombre_votants": {"type": "integer"},
-                    "nombre_suffrages_exprimes": {"type": "integer"},
-                    "votes_pour": {"type": "integer"},
-                    "votes_contre": {"type": "integer"},
                     
                     # Analyse sémantique (à remplir ultérieurement)
                     "mots_cles_insecurite": {"type": "keyword"},
@@ -124,20 +118,30 @@ class ESConnection:
         self.es.indices.create(index=self.index_name, body=mapping)
         print(f"✓ Index '{self.index_name}' créé avec succès")
     
-    def bulk_index(self, documents: List[Dict], batch_size: int = 500):
+    def bulk_index(self, documents: List[Dict], batch_size: int = 500, replace_existing: bool = True):
         """
         Indexe les documents en masse dans Elasticsearch
+        Utilise para_id comme identifiant unique pour éviter les doublons
         
         Args:
             documents: Liste des documents à indexer
             batch_size: Taille des lots pour l'indexation
+            replace_existing: Si True, remplace les documents existants avec le même ID
+                              Si False, ignore les documents dont l'ID existe déjà
         """
         def generate_actions():
             for doc in documents:
-                yield {
+                action = {
                     "_index": self.index_name,
                     "_source": doc
                 }
+                # Utiliser para_id comme _id unique si disponible
+                if doc.get('para_id'):
+                    action["_id"] = doc['para_id']
+                # Si replace_existing=False, utiliser "create" pour ignorer les existants
+                if not replace_existing:
+                    action["_op_type"] = "create"
+                yield action
         
         # Indexation en masse
         success, errors = helpers.bulk(
@@ -151,7 +155,16 @@ class ESConnection:
 
         print(f"✓ {success} documents indexés avec succès")
         if errors:
-            print(f"⚠ {len(errors)} erreurs d'indexation")
+            if not replace_existing:
+                # Filtrer les erreurs "document already exists"
+                real_errors = [e for e in errors if 'version_conflict_engine_exception' not in str(e)]
+                skipped = len(errors) - len(real_errors)
+                if skipped > 0:
+                    print(f"ℹ {skipped} documents ignorés (déjà existants)")
+                if real_errors:
+                    print(f"⚠ {len(real_errors)} erreurs d'indexation")
+            else:
+                print(f"⚠ {len(errors)} erreurs d'indexation")
     
     def get_document_count(self) -> int:
         """

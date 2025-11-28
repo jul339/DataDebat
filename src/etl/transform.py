@@ -253,7 +253,10 @@ class ANDebatsTransformer:
                 'fonction': doc.get('orateur_fonction', 'N/A'),
                 'para_id': doc.get('para_id', ''),
                 'orateur_nom': doc.get('orateur_nom', 'N/A'),
-                'texte': doc.get('texte', '')
+                'texte': doc.get('texte', ''),
+                'section_titre': doc.get('section_titre', 'N/A'),
+                'sous_section_titre': doc.get('sous_section_titre', 'N/A'),
+                'section_id': doc.get('section_id', 'N/A'),
             }
             for doc in documents
         ]
@@ -285,7 +288,7 @@ class ANDebatsTransformer:
             section_data = metadata.copy()
             
             # Titre de section
-            titre_struct = section.find('.//TitreStruct')
+            titre_struct = section.find('./TitreStruct')
             if titre_struct is not None:
                 section_id = titre_struct.get('Ident', '')
                 section_data['section_id'] = section_id
@@ -295,36 +298,79 @@ class ANDebatsTransformer:
                     section_data['section_titre'] = self.clean_text(
                         self.extract_text_recursive(intitule)
                     )
-            last_para_data = None
-            # Extraire tous les paragraphes de cette section
-            for para in section.findall('.//Para'):
-                para_id = para.get('idsyceron')
-                
-                # Ignorer les paragraphes sans identifiant
-                if para_id is None:
-                    continue
-                
-                # Cas 1: Continuation du paragraphe précédent (même id)
-                if last_para_data is not None and para_id == last_para_data['para_id']:
-                    last_para_data['texte'] += " " + self.extract_text_recursive(para)
-                    continue
-                
-                # Cas 2: Nouveau paragraphe
-                para_data = section_data.copy()
-                para_data['para_id'] = para_id
-                # Extraction de l'orateur
-                orateur_info = self.extract_orateur(para)
-                para_data['orateur_nom'] = orateur_info.get('nom')
-                para_data['orateur_fonction'] = orateur_info.get('fonction')
-                para_data['extraction_timestamp'] = datetime.now().isoformat()
-                para_data['vote_present'] = False
-                
-                para_data['texte'] = self.extract_text_recursive(para)
-                
-                documents.append(para_data)
-                last_para_data = para_data
+            
+            # Vérifier s'il y a des sous-sections
+            sous_sections = section.findall('./SousSection2')
+            
+            if sous_sections:
+                # Traiter chaque sous-section séparément
+                for sous_section in sous_sections:
+                    sous_section_data = section_data.copy()
+                    
+                    # Extraire le titre de la sous-section
+                    ss_titre_struct = sous_section.find('./TitreStruct')
+                    if ss_titre_struct is not None:
+                        ss_intitule = ss_titre_struct.find('.//Intitule')
+                        if ss_intitule is not None:
+                            sous_section_data['sous_section_titre'] = self.clean_text(
+                                self.extract_text_recursive(ss_intitule)
+                            )
+                    
+                    # Extraire les paragraphes de cette sous-section
+                    documents.extend(
+                        self._extract_paragraphs(sous_section, sous_section_data)
+                    )
+            else:
+                # Pas de sous-sections, traiter les paragraphes directement
+                documents.extend(
+                    self._extract_paragraphs(section, section_data)
+                )
             
             print(f"Extracted {len(documents)} paragraphs from section {section_data.get('section_id', '')}")
+        
+        return documents
+    
+    def _extract_paragraphs(self, parent_elem: ET.Element, base_data: Dict) -> List[Dict]:
+        """
+        Extrait les paragraphes d'un élément parent (Section ou SousSection2)
+        
+        Args:
+            parent_elem: Élément parent contenant les paragraphes
+            base_data: Données de base à copier pour chaque paragraphe
+            
+        Returns:
+            Liste de documents extraits
+        """
+        documents = []
+        last_para_data = None
+        
+        # Extraire les paragraphes directs (pas ceux dans des sous-éléments imbriqués)
+        for para in parent_elem.findall('./Para'):
+            para_id = para.get('idsyceron')
+            
+            # Ignorer les paragraphes sans identifiant
+            if para_id is None:
+                continue
+            
+            # Cas 1: Continuation du paragraphe précédent (même id)
+            if last_para_data is not None and para_id == last_para_data['para_id']:
+                last_para_data['texte'] += " " + self.extract_text_recursive(para)
+                continue
+            
+            # Cas 2: Nouveau paragraphe
+            para_data = base_data.copy()
+            para_data['para_id'] = para_id
+            # Extraction de l'orateur
+            orateur_info = self.extract_orateur(para)
+            para_data['orateur_nom'] = orateur_info.get('nom')
+            para_data['orateur_fonction'] = orateur_info.get('fonction')
+            para_data['extraction_timestamp'] = datetime.now().isoformat()
+            para_data['vote_present'] = False
+            
+            para_data['texte'] = self.extract_text_recursive(para)
+            
+            documents.append(para_data)
+            last_para_data = para_data
         
         return documents
     
@@ -364,7 +410,7 @@ class ANDebatsTransformer:
             year = metadata.get('annee', 'unknown')
             output_file = f"{output_dir}/{year}/{metadata.get('date_seance', 'N/A')}.json"
             self.save_documents_to_file(documents, output_file)
-
+            
             print(f"✓ {len(documents)} interventions extraites")
             print(f"✓ Traitement terminé avec succès")
             
@@ -409,3 +455,6 @@ class ANDebatsTransformer:
         
         return all_documents
 
+if __name__ == "__main__":
+    transformer = ANDebatsTransformer()
+    transformer.process_taz_file("./data/raw/2022/AN_2022002.taz")

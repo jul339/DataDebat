@@ -8,12 +8,15 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+from monitoring import ESMonitor
+
 # Ajouter le répertoire src au path pour les imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from db.es_connection import ESConnection
 from etl.transform import ANDebatsTransformer
 from etl.extract import telecharger_plusieurs_annees
+from load_batch import BatchLoader
 
 
 class ETLOrchestrator:
@@ -104,7 +107,7 @@ class ETLOrchestrator:
     
     # ========== LOAD ==========
     
-    def load(self, documents: List[dict], batch_size: int = 500):
+    def load(self, documents: List[dict], batch_size: int = 500, replace_existing: bool = True):
         """
         Charge les documents dans Elasticsearch
         
@@ -120,11 +123,11 @@ class ETLOrchestrator:
         print(f"📤 LOAD: Indexation de {len(documents)} documents")
         print(f"{'='*60}")
         
-        self.es_conn.bulk_index(documents, batch_size)
+        self.es_conn.bulk_index(documents, batch_size, replace_existing)
     
     # ========== ETL COMPLET ==========
     
-    def run_etl_file(self, taz_path: str, index_to_es: bool = True):
+    def run_etl_file(self, taz_path: str, index_to_es: bool = True, replace_existing: bool = True):
         """
         Exécute le pipeline ETL complet pour un fichier
         
@@ -141,7 +144,7 @@ class ETLOrchestrator:
         
         # Load
         if index_to_es and documents:
-            self.load(documents)
+            self.load(documents, replace_existing=replace_existing)
         
         return documents
     
@@ -204,6 +207,85 @@ class ETLOrchestrator:
         
         return all_documents
     
+    # ========== BATCH LOADING ==========
+    
+    def run_batch(self, years: List[int] = None, download: bool = False, 
+                  parallel: bool = True, max_workers: int = 3,
+                  skip_existing: bool = True, index_to_es: bool = True) -> dict:
+        """
+        Exécute le pipeline ETL en mode batch avec progression et parallélisme
+        
+        Args:
+            years: Liste des années à traiter (None = toutes celles présentes)
+            download: Si True, télécharge d'abord les fichiers
+            parallel: Si True, traite les fichiers en parallèle
+            max_workers: Nombre de workers pour le traitement parallèle
+            skip_existing: Si True, skip les fichiers déjà indexés
+            index_to_es: Si True, indexe dans Elasticsearch
+            
+        Returns:
+            Statistiques du traitement batch
+        """
+        print(f"\n{'='*60}")
+        print(f"🚀 ETL BATCH: Traitement de masse")
+        print(f"{'='*60}")
+        
+        # Extract (optionnel)
+        if download and years:
+            self.extract(years)
+        
+        # Créer le BatchLoader avec les composants existants
+        batch_loader = BatchLoader(
+            es_conn=self.es_conn,
+            transformer=self.transformer,
+            max_workers=max_workers,
+            transformed_dir=self.transformed_dir
+        )
+        
+        # Convertir les années en strings si fournies
+        years_str = [str(y) for y in years] if years else None
+        
+        # Lancer le batch loading
+        stats = batch_loader.run(
+            base_dir=self.raw_dir,
+            parallel=parallel,
+            skip_existing=skip_existing,
+            years=years_str,
+            index_to_es=index_to_es
+        )
+        
+        return stats
+    
+    def run_batch_directory(self, directory: str, parallel: bool = True,
+                            max_workers: int = 3, skip_existing: bool = True,
+                            index_to_es: bool = True) -> dict:
+        """
+        Exécute le batch loading sur un répertoire spécifique
+        
+        Args:
+            directory: Répertoire contenant les fichiers TAZ
+            parallel: Si True, traite les fichiers en parallèle
+            max_workers: Nombre de workers
+            skip_existing: Skip les fichiers déjà indexés
+            index_to_es: Indexer dans Elasticsearch
+            
+        Returns:
+            Statistiques du traitement
+        """
+        batch_loader = BatchLoader(
+            es_conn=self.es_conn,
+            transformer=self.transformer,
+            max_workers=max_workers,
+            transformed_dir=self.transformed_dir
+        )
+        
+        return batch_loader.run(
+            base_dir=directory,
+            parallel=parallel,
+            skip_existing=skip_existing,
+            index_to_es=index_to_es
+        )
+    
     # ========== STATISTIQUES ==========
     
     def get_stats(self) -> dict:
@@ -233,23 +315,34 @@ def main():
     ES_HOST = "http://localhost:9200"
     
     # Créer l'orchestrateur
-    orchestrator = ETLOrchestrator(ES_HOST)
+    orchestrator = ETLOrchestrator()
     
     # Setup de l'index (recreate=True pour repartir de zéro)
-    orchestrator.setup_index(recreate=True)
+    orchestrator.setup_index()
     
     # Option 1: Traiter un seul fichier
-    orchestrator.run_etl_file("./data/raw/2023/AN_2023003.taz")
+    # orchestrator.run_etl_file("./data/raw/2022/AN_2022002.taz")
     
     # Option 2: Traiter une année complète
-    # orchestrator.run_etl_year(2022, download=False, index_to_es=True)
+    # orchestrator.run_etl_year(2024, download=True, index_to_es=True)
     
-    # Option 3: Traiter plusieurs années avec téléchargement
+    # Option 3: Traiter plusieurs années avec téléchargement (ancien mode)
     # orchestrator.run_etl_years([2022, 2023], download=True, index_to_es=True)
     
-    # Option 4: Juste transformer sans indexer
-    # documents = orchestrator.transform_year(2022)
+    # Option 4: Mode BATCH - traitement parallèle avec progression (recommandé)
+    orchestrator.run_batch(
+        years=[2018, 2019, 2020, 2021, 2022, 2023],
+        download=True,
+        parallel=True,
+        max_workers=10,
+        skip_existing=True,
+        index_to_es=True
+    )
     
+    # Option 5: Juste transformer sans indexer
+    # documents = orchestrator.transform_year(2022)
+    monitor = ESMonitor(orchestrator.es_conn)
+    monitor.print_status()
     # Afficher les stats
     orchestrator.print_stats()
 

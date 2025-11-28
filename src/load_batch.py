@@ -1,6 +1,7 @@
 """
 Batch Loader pour fichiers TAZ de l'Assemblée Nationale
 Charge massivement des dizaines/centaines de fichiers dans Elasticsearch
+S'intègre avec ANDebatsTransformer et ESConnection
 """
 
 import os
@@ -8,44 +9,51 @@ import sys
 import time
 import argparse
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
-# Importer votre extracteur existant
-# Ajuster l'import selon votre structure
-# from load import ANDebatsExtractor
+# Ajouter le répertoire src au path pour les imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from db.es_connection import ESConnection
+from etl.transform import ANDebatsTransformer
 
 
 class BatchLoader:
-    """Chargeur de masse pour fichiers TAZ"""
+    """Chargeur de masse pour fichiers TAZ utilisant le transformer existant"""
     
-    def __init__(self, es_host: str = "http://localhost:9200", max_workers: int = 3):
+    def __init__(self, es_conn: Optional[ESConnection] = None, 
+                 transformer: Optional[ANDebatsTransformer] = None,
+                 es_host: str = "http://localhost:9200",
+                 max_workers: int = 3,
+                 transformed_dir: str = "./data/transformed"):
         """
         Initialise le batch loader
         
         Args:
-            es_host: URL Elasticsearch
+            es_conn: Instance ESConnection existante (optionnel)
+            transformer: Instance ANDebatsTransformer existante (optionnel)
+            es_host: URL Elasticsearch (utilisé si es_conn non fourni)
             max_workers: Nombre de workers parallèles (recommandé: 2-4)
+            transformed_dir: Répertoire pour les fichiers JSON transformés
         """
-        # Import local pour éviter les erreurs si le module n'existe pas
-        try:
-            from load import ANDebatsExtractor
-            self.extractor_class = ANDebatsExtractor
-        except ImportError:
-            print("⚠️  Impossible d'importer ANDebatsExtractor depuis load.py")
-            print("Assurez-vous que load.py est dans le même répertoire")
-            sys.exit(1)
-        
-        self.es_host = es_host
+        self.es_conn = es_conn or ESConnection(es_host)
+        self.transformer = transformer or ANDebatsTransformer()
         self.max_workers = max_workers
-        self.stats = {
+        self.transformed_dir = transformed_dir
+        self.stats = self._init_stats()
+    
+    def _init_stats(self) -> Dict:
+        """Initialise les statistiques"""
+        return {
             'total': 0,
             'success': 0,
             'failed': 0,
             'skipped': 0,
+            'documents_indexed': 0,
             'start_time': None,
             'end_time': None,
             'errors': []
@@ -99,13 +107,12 @@ class BatchLoader:
         
         return by_year
     
-    def check_if_already_indexed(self, taz_file: Path, extractor) -> bool:
+    def check_if_already_indexed(self, taz_file: Path) -> bool:
         """
-        Vérifie si un fichier a déjà été indexé
+        Vérifie si un fichier a déjà été indexé via son para_id
         
         Args:
             taz_file: Fichier TAZ à vérifier
-            extractor: Instance d'ANDebatsExtractor
             
         Returns:
             True si déjà indexé, False sinon
@@ -134,19 +141,27 @@ class BatchLoader:
                 "size": 0
             }
             
-            response = extractor.es.count(index=extractor.index_name, body=query)
+            response = self.es_conn.es.count(
+                index=self.es_conn.index_name, 
+                body=query
+            )
             return response['count'] > 0
             
         except (ValueError, IndexError):
             return False
+        except Exception:
+            # Si ES n'est pas accessible, on ne skip pas
+            return False
     
-    def process_single_file(self, taz_file: Path, skip_existing: bool = True) -> Dict:
+    def process_single_file(self, taz_file: Path, skip_existing: bool = True,
+                            index_to_es: bool = True) -> Dict:
         """
         Traite un seul fichier TAZ
         
         Args:
             taz_file: Chemin vers le fichier TAZ
             skip_existing: Si True, skip les fichiers déjà indexés
+            index_to_es: Si True, indexe dans Elasticsearch
             
         Returns:
             Dictionnaire avec le résultat du traitement
@@ -162,21 +177,29 @@ class BatchLoader:
         start_time = time.time()
         
         try:
-            # Créer une instance d'extracteur pour ce fichier
-            extractor = self.extractor_class(es_host=self.es_host)
-            
             # Vérifier si déjà indexé
-            if skip_existing and self.check_if_already_indexed(taz_file, extractor):
+            if skip_existing and self.check_if_already_indexed(taz_file):
                 result['status'] = 'skipped'
                 result['documents'] = 0
                 return result
             
-            # Traiter le fichier
-            extractor.process_taz_file(str(taz_file))
+            # Transformer le fichier
+            documents = self.transformer.process_taz_file(
+                str(taz_file), 
+                self.transformed_dir
+            )
+            
+            if not documents:
+                result['status'] = 'failed'
+                result['error'] = 'Aucun document extrait'
+                return result
+            
+            # Indexer dans ES si demandé
+            if index_to_es:
+                self.es_conn.bulk_index(documents, replace_existing=False)
             
             result['status'] = 'success'
-            # On ne peut pas facilement récupérer le nombre exact, utiliser une estimation
-            result['documents'] = 'indexed'
+            result['documents'] = len(documents)
             
         except Exception as e:
             result['status'] = 'failed'
@@ -187,33 +210,23 @@ class BatchLoader:
         
         return result
     
-    def process_files_sequential(self, taz_files: List[Path], skip_existing: bool = True):
+    def process_files_sequential(self, taz_files: List[Path], skip_existing: bool = True,
+                                  index_to_es: bool = True):
         """
         Traite les fichiers séquentiellement avec barre de progression
         
         Args:
             taz_files: Liste des fichiers à traiter
             skip_existing: Skip les fichiers déjà indexés
+            index_to_es: Indexer dans Elasticsearch
         """
         print(f"\n🔄 Traitement séquentiel de {len(taz_files)} fichiers")
         print("="*80)
         
         with tqdm(total=len(taz_files), desc="Progression", unit="fichier") as pbar:
             for taz_file in taz_files:
-                result = self.process_single_file(taz_file, skip_existing)
-                
-                # Mettre à jour les stats
-                self.stats['total'] += 1
-                if result['status'] == 'success':
-                    self.stats['success'] += 1
-                elif result['status'] == 'failed':
-                    self.stats['failed'] += 1
-                    self.stats['errors'].append({
-                        'file': result['file'],
-                        'error': result['error']
-                    })
-                elif result['status'] == 'skipped':
-                    self.stats['skipped'] += 1
+                result = self.process_single_file(taz_file, skip_existing, index_to_es)
+                self._update_stats(result)
                 
                 # Mettre à jour la barre
                 pbar.set_postfix({
@@ -223,13 +236,15 @@ class BatchLoader:
                 })
                 pbar.update(1)
     
-    def process_files_parallel(self, taz_files: List[Path], skip_existing: bool = True):
+    def process_files_parallel(self, taz_files: List[Path], skip_existing: bool = True,
+                                index_to_es: bool = True):
         """
         Traite les fichiers en parallèle avec barre de progression
         
         Args:
             taz_files: Liste des fichiers à traiter
             skip_existing: Skip les fichiers déjà indexés
+            index_to_es: Indexer dans Elasticsearch
         """
         print(f"\n🚀 Traitement parallèle de {len(taz_files)} fichiers")
         print(f"   Workers: {self.max_workers}")
@@ -238,7 +253,12 @@ class BatchLoader:
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # Soumettre tous les jobs
             futures = {
-                executor.submit(self.process_single_file, taz_file, skip_existing): taz_file
+                executor.submit(
+                    self.process_single_file, 
+                    taz_file, 
+                    skip_existing,
+                    index_to_es
+                ): taz_file
                 for taz_file in taz_files
             }
             
@@ -246,19 +266,7 @@ class BatchLoader:
             with tqdm(total=len(taz_files), desc="Progression", unit="fichier") as pbar:
                 for future in as_completed(futures):
                     result = future.result()
-                    
-                    # Mettre à jour les stats
-                    self.stats['total'] += 1
-                    if result['status'] == 'success':
-                        self.stats['success'] += 1
-                    elif result['status'] == 'failed':
-                        self.stats['failed'] += 1
-                        self.stats['errors'].append({
-                            'file': result['file'],
-                            'error': result['error']
-                        })
-                    elif result['status'] == 'skipped':
-                        self.stats['skipped'] += 1
+                    self._update_stats(result)
                     
                     # Mettre à jour la barre
                     pbar.set_postfix({
@@ -268,8 +276,24 @@ class BatchLoader:
                     })
                     pbar.update(1)
     
+    def _update_stats(self, result: Dict):
+        """Met à jour les statistiques avec le résultat d'un fichier"""
+        self.stats['total'] += 1
+        
+        if result['status'] == 'success':
+            self.stats['success'] += 1
+            self.stats['documents_indexed'] += result.get('documents', 0)
+        elif result['status'] == 'failed':
+            self.stats['failed'] += 1
+            self.stats['errors'].append({
+                'file': result['file'],
+                'error': result['error']
+            })
+        elif result['status'] == 'skipped':
+            self.stats['skipped'] += 1
+    
     def run(self, base_dir: str, parallel: bool = False, skip_existing: bool = True,
-            years: List[str] = None):
+            years: List[str] = None, index_to_es: bool = True) -> Dict:
         """
         Lance le chargement de masse
         
@@ -278,7 +302,13 @@ class BatchLoader:
             parallel: Si True, utilise le traitement parallèle
             skip_existing: Si True, skip les fichiers déjà indexés
             years: Liste des années à traiter (None = toutes)
+            index_to_es: Si True, indexe dans Elasticsearch
+            
+        Returns:
+            Statistiques du traitement
         """
+        # Reset stats
+        self.stats = self._init_stats()
         self.stats['start_time'] = datetime.now()
         
         print(f"\n{'='*80}")
@@ -292,7 +322,7 @@ class BatchLoader:
         
         if not taz_files:
             print(f"❌ Aucun fichier TAZ trouvé dans {base_dir}")
-            return
+            return self.stats
         
         print(f"✅ {len(taz_files)} fichiers TAZ trouvés")
         
@@ -305,21 +335,22 @@ class BatchLoader:
         
         # Filtrer par années si spécifié
         if years:
+            years_str = [str(y) for y in years]
             taz_files = [
-                f for year in years 
+                f for year in years_str 
                 for f in by_year.get(year, [])
             ]
             print(f"\n🎯 Filtrage: {len(taz_files)} fichiers pour les années {years}")
         
         if not taz_files:
             print("❌ Aucun fichier à traiter après filtrage")
-            return
+            return self.stats
         
         # Traiter les fichiers
         if parallel:
-            self.process_files_parallel(taz_files, skip_existing)
+            self.process_files_parallel(taz_files, skip_existing, index_to_es)
         else:
-            self.process_files_sequential(taz_files, skip_existing)
+            self.process_files_sequential(taz_files, skip_existing, index_to_es)
         
         self.stats['end_time'] = datetime.now()
         
@@ -328,6 +359,8 @@ class BatchLoader:
         
         # Sauvegarder le rapport
         self.save_report()
+        
+        return self.stats
     
     def print_summary(self):
         """Affiche un résumé du traitement"""
@@ -341,6 +374,7 @@ class BatchLoader:
         print(f"✅ Succès: {self.stats['success']} ({self.stats['success']/max(self.stats['total'],1)*100:.1f}%)")
         print(f"⏭️  Skippés: {self.stats['skipped']} ({self.stats['skipped']/max(self.stats['total'],1)*100:.1f}%)")
         print(f"❌ Échecs: {self.stats['failed']} ({self.stats['failed']/max(self.stats['total'],1)*100:.1f}%)")
+        print(f"📄 Documents indexés: {self.stats['documents_indexed']}")
         
         if self.stats['success'] > 0:
             avg_time = duration / self.stats['success']
@@ -371,7 +405,8 @@ class BatchLoader:
                 'total': self.stats['total'],
                 'success': self.stats['success'],
                 'failed': self.stats['failed'],
-                'skipped': self.stats['skipped']
+                'skipped': self.stats['skipped'],
+                'documents_indexed': self.stats['documents_indexed']
             },
             'errors': self.stats['errors']
         }
@@ -390,19 +425,22 @@ def main():
         epilog="""
 Exemples d'utilisation:
   # Charger tous les fichiers de data/raw/
-  python batch_loader.py data/raw/
+  python load_batch.py data/raw/
   
   # Charger en parallèle avec 4 workers
-  python batch_loader.py data/raw/ --parallel --workers 4
+  python load_batch.py data/raw/ --parallel --workers 4
   
   # Charger seulement 2022 et 2023
-  python batch_loader.py data/raw/ --years 2022 2023
+  python load_batch.py data/raw/ --years 2022 2023
   
   # Forcer le rechargement (sans skip)
-  python batch_loader.py data/raw/ --no-skip
+  python load_batch.py data/raw/ --no-skip
   
   # Mode dry-run (simulation)
-  python batch_loader.py data/raw/ --dry-run
+  python load_batch.py data/raw/ --dry-run
+  
+  # Transformer seulement (pas d'indexation ES)
+  python load_batch.py data/raw/ --no-index
         """
     )
     
@@ -457,6 +495,19 @@ Exemples d'utilisation:
         help='Créer/recréer l\'index Elasticsearch avant le chargement'
     )
     
+    parser.add_argument(
+        '--no-index',
+        action='store_true',
+        help='Ne pas indexer dans Elasticsearch (transformation seulement)'
+    )
+    
+    parser.add_argument(
+        '--output-dir',
+        type=str,
+        default='./data/transformed',
+        help='Répertoire de sortie pour les fichiers JSON transformés'
+    )
+    
     args = parser.parse_args()
     
     # Vérifier que le répertoire existe
@@ -467,7 +518,11 @@ Exemples d'utilisation:
     # Mode dry-run
     if args.dry_run:
         print(f"\n🔍 MODE DRY-RUN: Simulation du chargement\n")
-        loader = BatchLoader(es_host=args.es_host, max_workers=args.workers)
+        loader = BatchLoader(
+            es_host=args.es_host, 
+            max_workers=args.workers,
+            transformed_dir=args.output_dir
+        )
         taz_files = loader.find_taz_files(args.base_dir)
         by_year = loader.organize_files_by_year(taz_files)
         
@@ -485,20 +540,27 @@ Exemples d'utilisation:
         
         return
     
+    # Créer la connexion ES
+    es_conn = ESConnection(args.es_host)
+    
     # Créer l'index si demandé
     if args.create_index:
-        from load import ANDebatsExtractor
         print("\n🔨 Création de l'index Elasticsearch...")
-        extractor = ANDebatsExtractor(es_host=args.es_host)
-        extractor.create_index()
+        es_conn.create_index()
     
     # Lancer le batch loader
-    loader = BatchLoader(es_host=args.es_host, max_workers=args.workers)
+    loader = BatchLoader(
+        es_conn=es_conn,
+        max_workers=args.workers,
+        transformed_dir=args.output_dir
+    )
+    
     loader.run(
         base_dir=args.base_dir,
         parallel=args.parallel,
         skip_existing=not args.no_skip,
-        years=args.years
+        years=args.years,
+        index_to_es=not args.no_index
     )
 
 
