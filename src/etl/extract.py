@@ -4,7 +4,7 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Dictionnaire : année → nombre de fichiers à télécharger
-from var import *
+from config import *
 
 def creer_dossier_sortie(annee: int) -> str:
     """Crée le dossier pour une année donnée et retourne son chemin."""

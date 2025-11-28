@@ -1,137 +1,21 @@
 """
-Extracteur de débats de l'Assemblée Nationale vers Elasticsearch
-Analyse de l'évolution du discours politique sur l'insécurité (2009-2025)
+Module de transformation des débats de l'Assemblée Nationale
+Extraction et parsing des fichiers TAZ/XML vers des documents structurés
 """
 
 import os
 import tarfile
-import gzip
 import io
+import json
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 import re
 
-from elasticsearch import Elasticsearch, helpers
-from elasticsearch.exceptions import ConnectionError, RequestError
 
-
-class ANDebatsExtractor:
-    """Extracteur et indexeur de débats de l'Assemblée Nationale"""
-    
-    def __init__(self, es_host: str = "http://localhost:9200"):
-        """
-        Initialise la connexion Elasticsearch
-        
-        Args:
-            es_host: URL du serveur Elasticsearch
-        """
-        self.es = Elasticsearch(es_host)
-        self.index_name = "debats_assemblee_nationale"
-        
-        # Vérifier la connexion
-        try:
-            if self.es.ping():
-                print(f"✓ Connexion établie avec Elasticsearch")
-            else:
-                raise ConnectionError("Impossible de se connecter à Elasticsearch")
-        except Exception as e:
-            raise ConnectionError(f"Erreur de connexion à Elasticsearch: {e}")
-    
-    def create_index(self):
-        """Crée l'index Elasticsearch avec le mapping optimisé pour l'analyse linguistique"""
-        
-        mapping = {
-            "mappings": {
-                "properties": {
-                    # Métadonnées temporelles
-                    "date_seance": {"type": "date", "format": "yyyy-MM-dd"},
-                    "date_parution": {"type": "date", "format": "yyyy-MM-dd"},
-                    "annee": {"type": "integer"},
-                    "mois": {"type": "integer"},
-                    
-                    # Métadonnées de session
-                    "legislature": {"type": "integer"},
-                    "session_nom": {"type": "keyword"},
-                    "session_parlementaire": {"type": "keyword"},
-                    "seance_numero": {"type": "keyword"},
-                    "publication_numero": {"type": "integer"},
-                    
-                    # Identification du document
-                    "document_id": {"type": "keyword"},
-                    "section_id": {"type": "keyword"},
-                    "para_id": {"type": "keyword"},
-                    
-                    # Contenu textuel
-                    "texte": {
-                        "type": "text",
-                        "analyzer": "french",
-                        "fields": {
-                            "keyword": {"type": "keyword", "ignore_above": 256}
-                        }
-                    },
-                    
-                    # Orateur
-                    "orateur_nom": {
-                        "type": "text",
-                        "analyzer": "french",
-                        "fields": {
-                            "keyword": {"type": "keyword"}
-                        }
-                    },
-                    "orateur_fonction": {"type": "keyword"},
-                    
-                    # Structure du débat
-                    "section_titre": {
-                        "type": "text",
-                        "analyzer": "french",
-                        "fields": {
-                            "keyword": {"type": "keyword"}
-                        }
-                    },
-                    "sous_section_titre": {"type": "text", "analyzer": "french"},
-                    "niveau_section": {"type": "integer"},
-                    
-                    # Vote (si présent)
-                    "vote_present": {"type": "boolean"},
-                    "nombre_votants": {"type": "integer"},
-                    "nombre_suffrages_exprimes": {"type": "integer"},
-                    "votes_pour": {"type": "integer"},
-                    "votes_contre": {"type": "integer"},
-                    
-                    # Analyse sémantique (à remplir ultérieurement)
-                    "mots_cles_insecurite": {"type": "keyword"},
-                    "sentiment": {"type": "keyword"},
-                    "polarite": {"type": "float"},
-                    
-                    # Métadonnées techniques
-                    "folio": {"type": "integer"},
-                    "numero_premiere_page": {"type": "integer"},
-                    "extraction_timestamp": {"type": "date"}
-                }
-            },
-            "settings": {
-                "number_of_shards": 1,
-                "number_of_replicas": 0,
-                "analysis": {
-                    "analyzer": {
-                        "french": {
-                            "type": "french"
-                        }
-                    }
-                }
-            }
-        }
-        
-        # Supprimer l'index s'il existe déjà
-        if self.es.indices.exists(index=self.index_name):
-            print(f"⚠ L'index '{self.index_name}' existe déjà. Suppression...")
-            self.es.indices.delete(index=self.index_name)
-        
-        # Créer le nouvel index
-        self.es.indices.create(index=self.index_name, body=mapping)
-        print(f"✓ Index '{self.index_name}' créé avec succès")
+class ANDebatsTransformer:
+    """Extracteur et transformateur de débats de l'Assemblée Nationale"""
     
     def extract_xml_from_taz(self, taz_path: str) -> Tuple[Optional[ET.Element], str]:
         """
@@ -355,7 +239,6 @@ class ANDebatsExtractor:
                 texts.append(child.tail)
         return ' '.join(texts)
     
-
     def save_documents_to_file(self, documents: List[Dict], output_file: str = "documents_output.json"):
         """
         Sauvegarde les documents extraits dans un fichier JSON
@@ -364,8 +247,6 @@ class ANDebatsExtractor:
             documents: Liste des documents à sauvegarder
             output_file: Chemin du fichier de sortie
         """
-        import json
-        
         # Extraire seulement orateur_nom et texte
         filtered_docs = [
             {
@@ -377,13 +258,15 @@ class ANDebatsExtractor:
             for doc in documents
         ]
         
+        # Créer le répertoire si nécessaire
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        
         # Sauvegarder en JSON
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(filtered_docs, f, indent=2, ensure_ascii=False)
         
         print(f"✓ {len(filtered_docs)} documents sauvegardés dans {output_file}")
-
-
+    
     def extract_sections(self, root: ET.Element, metadata: Dict) -> List[Dict]:
         """
         Extrait toutes les sections et interventions du débat
@@ -442,52 +325,19 @@ class ANDebatsExtractor:
                 last_para_data = para_data
             
             print(f"Extracted {len(documents)} paragraphs from section {section_data.get('section_id', '')}")
-            # documents = [doc for doc in documents if doc.get('texte') is not None or len(doc.get('texte', '')) >= 10]
-            documents
-            # print(f"Extracted {len(documents)} paragraphs from section {section_data.get('section_id', '')}")
-
-            # Extraire les résultats de vote s'ils existent
-            # vote_data = self.extract_vote(section)
-            # if vote_data:
-            #     # Ajouter les données de vote au dernier paragraphe de la section
-            #     if documents and documents[-1].get('section_id') == section_data.get('section_id'):
-            #         documents[-1].update(vote_data)
         
         return documents
     
-    def bulk_index(self, documents: List[Dict], batch_size: int = 500):
+    def process_taz_file(self, taz_path: str, output_dir: str = "./data/transformed") -> List[Dict]:
         """
-        Indexe les documents en masse dans Elasticsearch
-        
-        Args:
-            documents: Liste des documents à indexer
-            batch_size: Taille des lots pour l'indexation
-        """
-        def generate_actions():
-            for doc in documents:
-                yield {
-                    "_index": self.index_name,
-                    "_source": doc
-                }
-        
-        # Indexation en masse
-        success, errors = helpers.bulk(
-            self.es,
-            generate_actions(),
-            chunk_size=batch_size,
-            raise_on_error=False
-        )
-        
-        print(f"✓ {success} documents indexés avec succès")
-        if errors:
-            print(f"⚠ {len(errors)} erreurs d'indexation")
-    
-    def process_taz_file(self, taz_path: str):
-        """
-        Traite un fichier TAZ complet: extraction, parsing et indexation
+        Traite un fichier TAZ complet: extraction et parsing
         
         Args:
             taz_path: Chemin vers le fichier .taz
+            output_dir: Répertoire de sortie pour les fichiers JSON
+            
+        Returns:
+            Liste des documents extraits
         """
         print(f"\n{'='*60}")
         print(f"Traitement de: {os.path.basename(taz_path)}")
@@ -499,7 +349,7 @@ class ANDebatsExtractor:
             
             if root is None:
                 print("✗ Impossible d'extraire le XML")
-                return
+                return []
             
             print(f"✓ XML parsé avec succès: {xml_filename}")
             
@@ -509,72 +359,53 @@ class ANDebatsExtractor:
             
             # Étape 3: Extraire les sections et interventions
             documents = self.extract_sections(root, metadata)
-            output_file = f"./data/transformed/2022/{metadata.get('date_seance', 'N/A')}.json"
+            
+            # Étape 4: Sauvegarder en JSON
+            year = metadata.get('annee', 'unknown')
+            output_file = f"{output_dir}/{year}/{metadata.get('date_seance', 'N/A')}.json"
             self.save_documents_to_file(documents, output_file)
 
             print(f"✓ {len(documents)} interventions extraites")
-            
-            # Étape 4: Indexer dans Elasticsearch
-            if documents:
-                self.bulk_index(documents)
-            
             print(f"✓ Traitement terminé avec succès")
+            
+            return documents
             
         except Exception as e:
             print(f"✗ Erreur lors du traitement: {e}")
             import traceback
             traceback.print_exc()
+            return []
     
-    def process_directory(self, directory: str):
+    def process_directory(self, directory: str, output_dir: str = "./data/transformed") -> List[Dict]:
         """
         Traite tous les fichiers TAZ d'un répertoire
         
         Args:
             directory: Chemin vers le répertoire contenant les fichiers TAZ
+            output_dir: Répertoire de sortie pour les fichiers JSON
+            
+        Returns:
+            Liste de tous les documents extraits
         """
         taz_files = list(Path(directory).glob("*.taz"))
         
         if not taz_files:
             print(f"⚠ Aucun fichier .taz trouvé dans {directory}")
-            return
+            return []
         
         print(f"\n{'='*60}")
         print(f"Traitement de {len(taz_files)} fichier(s) TAZ")
         print(f"{'='*60}")
         
+        all_documents = []
         for i, taz_file in enumerate(taz_files, 1):
             print(f"\n[{i}/{len(taz_files)}]")
-            self.process_taz_file(str(taz_file))
+            documents = self.process_taz_file(str(taz_file), output_dir)
+            all_documents.extend(documents)
         
         print(f"\n{'='*60}")
-        print(f"Traitement global terminé")
+        print(f"Traitement global terminé: {len(all_documents)} documents extraits")
         print(f"{'='*60}")
+        
+        return all_documents
 
-
-def main():
-    """Fonction principale"""
-    
-    # Configuration
-    ES_HOST = "http://localhost:9200"
-    DATA_DIR = "./data/raw/2022"  # Répertoire contenant les fichiers TAZ
-    
-    # Créer l'extracteur
-    extractor = ANDebatsExtractor()
-    
-    # Créer l'index
-    extractor.create_index()
-    
-    # Traiter les fichiers
-    # Option 1: Traiter un seul fichier
-    extractor.process_taz_file("./data/raw/2023/AN_2023003.taz")
-    
-    # Option 2: Traiter tous les fichiers d'un répertoire
-    # extractor.process_directory(DATA_DIR)
-    
-    # Vérifier l'indexation
-    # count = extractor.es.count(index=extractor.index_name)
-    # print(f"\n📊 Total de documents indexés: {count['count']}")
-
-
-if __name__ == "__main__":
-    main()
