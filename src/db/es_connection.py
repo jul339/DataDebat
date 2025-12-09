@@ -175,4 +175,163 @@ class ESConnection:
         """
         count = self.es.count(index=self.index_name)
         return count['count']
-
+    
+    def get_word_count(self, doc_id: str, field: str = "texte") -> int:
+        """
+        Compte le nombre de mots pour un document identifié.
+        
+        Args:
+            doc_id: Identifiant du document (ex: para_id).
+            field: Nom du champ texte à analyser.
+        
+        Returns:
+            Nombre de mots dans le champ texte. Retourne 0 si le champ est vide ou absent.
+        """
+        try:
+            doc = self.es.get(index=self.index_name, id=doc_id)
+        except Exception as e:
+            raise RuntimeError(f"Impossible de récupérer le document {doc_id}: {e}") from e
+        
+        source = doc.get("_source", {})
+        if field not in source or not source[field]:
+            return 0
+        
+        # Comptage simple sur découpage par espaces
+        return len(str(source[field]).split())
+    
+    def get_word_count_for_year(self, date_seance: str, field: str = "texte") -> int:
+        """
+        Calcule le nombre total de mots pour tous les documents d'une année.
+        
+        Args:
+            year: Année à analyser (champ 'annee' dans l'index).
+            field: Champ texte sur lequel compter les mots.
+        
+        Returns:
+            Nombre total de mots pour l'année demandée.
+        """
+        try:
+            response = self.es.search(
+                index=self.index_name,
+                size=0,
+                query={"term": {"date_seance": date_seance}},
+                aggs={
+                    "word_count": {
+                        "sum": {
+                            "script": {
+                                "source": """
+                                    def src = params._source;
+                                    if (src == null || !src.containsKey(params.field)) return 0;
+                                    def txt = src[params.field];
+                                    if (txt == null) return 0;
+                                    return txt.toString().splitOnToken(' ').length;
+                                """,
+                                "params": {"field": field},
+                            }
+                        }
+                    }
+                },
+            )
+        except Exception as e:
+            raise RuntimeError(f"Erreur lors du comptage des mots pour {date_seance}: {e}") from e
+        
+        return int(response.get("aggregations", {}).get("word_count", {}).get("value", 0))
+    
+    def count_documents_without_text(self, field: str = "texte") -> int:
+        """
+        Compte le nombre de documents qui n'ont pas le champ texte renseigné
+        ou qui ont un champ texte vide (chaîne vide, null, ou liste vide).
+        
+        Args:
+            field: Nom du champ texte à vérifier (par défaut 'texte').
+        
+        Returns:
+            Nombre de documents sans ce champ ou avec un champ vide.
+        """
+        try:
+            response = self.es.count(
+                index=self.index_name,
+                query={
+                    "bool": {
+                        "should": [
+                            # Documents où le champ n'existe pas
+                            {
+                                "bool": {
+                                    "must_not": [
+                                        {"exists": {"field": field}}
+                                    ]
+                                }
+                            },
+                            # Documents où le champ existe mais est vide
+                            {
+                                "script": {
+                                    "script": {
+                                        "source": """
+                                            def src = params._source;
+                                            if (src == null || !src.containsKey(params.field)) {
+                                                return true;
+                                            }
+                                            def txt = src[params.field];
+                                            if (txt == null) {
+                                                return true;
+                                            }
+                                            if (txt instanceof List) {
+                                                return txt.isEmpty() || txt.stream().allMatch(x -> x == null || x.toString().trim().isEmpty());
+                                            }
+                                            return !(txt.toString().trim().isEmpty());
+                                        """,
+                                        "params": {"field": field}
+                                    }
+                                }
+                            }
+                        ],
+                        "minimum_should_match": 1
+                    }
+                },
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Erreur lors du comptage des documents sans champ {field}: {e}"
+            ) from e
+        
+        return int(response.get("count", 0))
+    
+    def count_documents_with_text_list(self, field: str = "texte") -> int:
+        """
+        Compte le nombre de documents où le champ texte est une liste (array)
+        plutôt qu'une chaîne simple.
+        
+        Args:
+            field: Nom du champ texte à vérifier (par défaut 'texte').
+        
+        Returns:
+            Nombre de documents avec ce champ sous forme de liste.
+        """
+        try:
+            response = self.es.count(
+                index=self.index_name,
+                query={
+                    "script": {
+                        "script": {
+                            "source": """
+                                def src = params._source;
+                                if (src == null || !src.containsKey(params.field)) {
+                                    return false;
+                                }
+                                def txt = src[params.field];
+                                if (txt == null) {
+                                    return false;
+                                }
+                                return txt instanceof List;
+                            """,
+                            "params": {"field": field}
+                        }
+                    }
+                },
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Erreur lors du comptage des documents avec liste pour {field}: {e}"
+            ) from e
+        
+        return int(response.get("count", 0))

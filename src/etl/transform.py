@@ -158,6 +158,32 @@ class ANDebatsTransformer:
         text = re.sub(r'\s+', ' ', text)
         return text.strip()
     
+    def remove_speaker_prefix(self, text: str, orateur_nom: Optional[str]) -> str:
+        """
+        Supprime le nom de l'orateur au début du texte
+        
+        Args:
+            text: Texte brut extrait
+            orateur_nom: Nom de l'orateur (ex: "M. Thomas Mesnier")
+            
+        Returns:
+            Texte nettoyé sans le préfixe de l'orateur
+        """
+        if not text:
+            return ""
+        
+        # Supprimer le nom de l'orateur s'il est au début du texte
+        if orateur_nom:
+            # Pattern pour matcher le nom de l'orateur suivi d'un point ou de ponctuation
+            pattern = rf'^{re.escape(orateur_nom)}\.?\s*'
+            text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+        
+        # Supprimer aussi les patterns génériques d'orateur au début
+        # Ex: "M. le président.", "Mme la ministre.", etc.
+        text = re.sub(r'^(M\.|Mme|Mlle)\.?\s+[^.]+\.\s*', '', text)
+        
+        return text.strip()
+    
     def extract_orateur(self, para_elem: ET.Element) -> Dict:
         """
         Extrait les informations sur l'orateur
@@ -354,7 +380,9 @@ class ANDebatsTransformer:
             
             # Cas 1: Continuation du paragraphe précédent (même id)
             if last_para_data is not None and para_id == last_para_data['para_id']:
-                last_para_data['texte'] += " " + self.extract_text_recursive(para)
+                raw_text = self.extract_text_recursive(para)
+                cleaned_text = self.remove_speaker_prefix(raw_text, last_para_data.get('orateur_nom'))
+                last_para_data['texte'] += " " + cleaned_text
                 continue
             
             # Cas 2: Nouveau paragraphe
@@ -367,7 +395,9 @@ class ANDebatsTransformer:
             para_data['extraction_timestamp'] = datetime.now().isoformat()
             para_data['vote_present'] = False
             
-            para_data['texte'] = self.extract_text_recursive(para)
+            # Extraire le texte et supprimer le préfixe de l'orateur
+            raw_text = self.extract_text_recursive(para)
+            para_data['texte'] = self.remove_speaker_prefix(raw_text, para_data['orateur_nom'])
             
             documents.append(para_data)
             last_para_data = para_data
