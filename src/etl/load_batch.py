@@ -410,9 +410,25 @@ class BatchLoader:
             },
             'errors': self.stats['errors']
         }
+        existing_runs = []
+        if os.path.exists(output_file):
+            try:
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    if isinstance(data, dict) and 'runs' in data:
+                        existing_runs = data['runs']
+                    elif isinstance(data, dict):
+                        existing_runs = [data]
+                    elif isinstance(data, list):
+                        existing_runs = data
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"⚠ Avertissement: Impossible de lire le fichier existant {output_file}: {e}")
+        
+        existing_runs.append(report)
         
         with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(report, f, indent=2, ensure_ascii=False)
+            json.dump({'runs': existing_runs}, f, indent=2, ensure_ascii=False)
+        
         
         print(f"💾 Rapport sauvegardé: {output_file}")
 
