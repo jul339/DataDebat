@@ -290,11 +290,26 @@ class ANDebatsTransformer:
         # Créer le répertoire si nécessaire
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
         
+        # Charger les documents existants si le fichier existe déjà
+        existing_docs = []
+        if os.path.exists(output_file):
+            try:
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    existing_docs = json.load(f)
+                if not isinstance(existing_docs, list):
+                    existing_docs = []
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"⚠ Avertissement: Impossible de lire le fichier existant {output_file}: {e}")
+                existing_docs = []
+        
+        # Fusionner les documents existants avec les nouveaux
+        all_docs = existing_docs + filtered_docs
+        
         # Sauvegarder en JSON
         with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(filtered_docs, f, indent=2, ensure_ascii=False)
+            json.dump(all_docs, f, indent=2, ensure_ascii=False)
         
-        print(f"✓ {len(filtered_docs)} documents sauvegardés dans {output_file}")
+        print(f"✓ {len(filtered_docs)} nouveaux documents ajoutés ({len(all_docs)} documents au total) dans {output_file}")
     
     def extract_sections(self, root: ET.Element, metadata: Dict) -> List[Dict]:
         """
@@ -326,7 +341,9 @@ class ANDebatsTransformer:
                     )
             
             # Vérifier s'il y a des sous-sections
-            sous_sections = section.findall('./SousSection2')
+            sous_sections_1 = section.findall('./SousSection1')
+            sous_sections_2 = section.findall('./SousSection2')
+            sous_sections = sous_sections_1 + sous_sections_2
             
             if sous_sections:
                 # Traiter chaque sous-section séparément
@@ -341,7 +358,6 @@ class ANDebatsTransformer:
                             sous_section_data['sous_section_titre'] = self.clean_text(
                                 self.extract_text_recursive(ss_intitule)
                             )
-                    
                     # Extraire les paragraphes de cette sous-section
                     documents.extend(
                         self._extract_paragraphs(sous_section, sous_section_data)

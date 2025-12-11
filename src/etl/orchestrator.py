@@ -11,7 +11,8 @@ from typing import List, Optional
 from monitoring import ESMonitor
 
 # Ajouter le répertoire src au path pour les imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+ROOT = Path(__file__).resolve().parents[1]  # pointe sur .../src
+sys.path.insert(0, str(ROOT))
 
 from db.es_connection import ESConnection
 from etl.transform import ANDebatsTransformer
@@ -257,7 +258,7 @@ class ETLOrchestrator:
         return stats
     
     def run_batch_directory(self, directory: str, parallel: bool = True,
-                            max_workers: int = 3, skip_existing: bool = True,
+                            max_workers: int = 10, skip_existing: bool = True,
                             index_to_es: bool = True) -> dict:
         """
         Exécute le batch loading sur un répertoire spécifique
@@ -311,14 +312,12 @@ class ETLOrchestrator:
 def main():
     """Fonction principale"""
     
-    # Configuration
-    ES_HOST = "http://localhost:9200"
     
     # Créer l'orchestrateur
     orchestrator = ETLOrchestrator()
     
     # Setup de l'index (recreate=True pour repartir de zéro)
-    orchestrator.setup_index()
+    # orchestrator.setup_index()
     
     # Option 1: Traiter un seul fichier
     # orchestrator.run_etl_file("./data/raw/2022/AN_2022002.taz")
@@ -327,7 +326,7 @@ def main():
     # orchestrator.run_etl_year(2024, download=True, index_to_es=True)
     
     # Option 3: Traiter plusieurs années avec téléchargement (ancien mode)
-    # orchestrator.run_etl_years([2022, 2023], download=True, index_to_es=True)
+    orchestrator.run_etl_years([2018, 2019, 2020, 2021, 2022, 2023, 2024], download=False, index_to_es=True)
     
     # Option 4: Mode BATCH - traitement parallèle avec progression (recommandé)
     orchestrator.run_batch(
