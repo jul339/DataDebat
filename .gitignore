@@ -1,4 +1,6 @@
 data/*
+*.md
+batch_load_report.md
 batch_load_report.json
 .vscode/
 __pycache__/

@@ -9,3 +9,10 @@ conda activate datadebat
 pip install -r requirements.txt
 ```
 
+Pour lancer l'ETL : src/etl/orchestrator.py
+    Pour lancer sur plusieurs annees : 
+        aller dans le main 
+        changer les parametre en  
+        download : si vous voulez télécharger les fichiers bruts les .taz
+        parallel : si vous voulez paralléliser le code 
+        max workers : nombre de coeurs utiliser pendant la parallélisation 
