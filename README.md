@@ -6,7 +6,7 @@ Activation de l'environnement et installation des bibliotèques avec les bonnes 
 ```
 conda create -n datadebat python=3.11
 conda activate datadebat
-pip install -r requirements.txt
+conda install --file requirements.txt
 ```
 
 Pour lancer l'ETL : src/etl/orchestrator.py

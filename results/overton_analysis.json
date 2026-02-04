@@ -1,0 +1,81 @@
+{
+  "analysis_date": "2026-02-04T15:20:33.865712",
+  "words": {
+    "immigration": {
+      "total_passages": 389,
+      "passages_in_range": 389,
+      "years_analyzed": [
+        2018,
+        2019,
+        2020
+      ],
+      "temporal_shifts": {
+        "(2018, 2019)": "0.0067851543",
+        "(2019, 2020)": "0.008286655"
+      }
+    },
+    "migrant": {
+      "total_passages": 59,
+      "passages_in_range": 59,
+      "years_analyzed": [
+        2018,
+        2019,
+        2020
+      ],
+      "temporal_shifts": {
+        "(2018, 2019)": "0.04212153",
+        "(2019, 2020)": "0.07392311"
+      }
+    },
+    "immigré": {
+      "total_passages": 8,
+      "passages_in_range": 8,
+      "years_analyzed": [
+        2018,
+        2019
+      ],
+      "temporal_shifts": {
+        "(2018, 2019)": "0.08807796"
+      }
+    },
+    "étranger": {
+      "total_passages": 551,
+      "passages_in_range": 551,
+      "years_analyzed": [
+        2018,
+        2019,
+        2020
+      ],
+      "temporal_shifts": {
+        "(2018, 2019)": "0.003892064",
+        "(2019, 2020)": "0.00369066"
+      }
+    },
+    "réfugié": {
+      "total_passages": 182,
+      "passages_in_range": 182,
+      "years_analyzed": [
+        2018,
+        2019,
+        2020
+      ],
+      "temporal_shifts": {
+        "(2018, 2019)": "0.023765504",
+        "(2019, 2020)": "0.0572232"
+      }
+    },
+    "demandeur d'asile": {
+      "total_passages": 552,
+      "passages_in_range": 552,
+      "years_analyzed": [
+        2018,
+        2019,
+        2020
+      ],
+      "temporal_shifts": {
+        "(2018, 2019)": "0.00873965",
+        "(2019, 2020)": "0.0051719546"
+      }
+    }
+  }
+}
