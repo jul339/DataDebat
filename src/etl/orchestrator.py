@@ -342,7 +342,7 @@ def main():
     orchestrator = ETLOrchestrator()
 
     # Setup de l'index (recreate=True pour repartir de zéro)
-    # orchestrator.setup_index()
+    orchestrator.setup_index()
 
     # Option 1: Traiter un seul fichier
     # orchestrator.run_etl_file("./data/raw/2022/AN_2022002.taz")
@@ -350,7 +350,7 @@ def main():
     # Option 2: Traiter une année complète
     # orchestrator.run_etl_year(2024, download=True, index_to_es=True)
 
-    # Option 3: Traiter plusieurs années avec téléchargement (ancien mode)
+    # # Option 3: Traiter plusieurs années avec téléchargement (ancien mode)
     orchestrator.run_etl_years(
         [2018, 2019, 2020], download=False, index_to_es=True, save_transform_file=True
     )

@@ -1,0 +1,14 @@
+elasticsearch:
+  host: "http://localhost:9200"
+  index_debats: "debats_assemblee_nationale"
+  batch_size: 500
+
+# topic:
+#   name: "immigration"
+#   seed_words:
+#     - immigration
+#     - migrant
+#     - immigré
+#     - étranger
+#     - réfugié
+#     - demandeur d'asile
