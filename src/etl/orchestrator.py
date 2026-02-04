@@ -342,7 +342,7 @@ def main():
     orchestrator = ETLOrchestrator()
 
     # Setup de l'index (recreate=True pour repartir de zéro)
-    # orchestrator.setup_index()
+    orchestrator.setup_index(recreate=True)
 
     # Option 1: Traiter un seul fichier
     # orchestrator.run_etl_file("./data/raw/2022/AN_2022002.taz")

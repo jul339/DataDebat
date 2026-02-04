@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?dctm xml_app="ignore"?>
+<?Folio 2851?>
+<PublicationDANBlanc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CahierBlanc_Etalab.xsd">
+    <?Folio 2852?>
+    <Metadonnees>
+        <PublicationNumero>37</PublicationNumero>
+        <DateParution>Vendredi-13-04-Avril-2018</DateParution>
+        <DateSeance>Jeudi-12-04-Avril-2018</DateSeance>
+        <ISSN>0242-6765</ISSN>
+        <SessionNom>ordinaire</SessionNom>
+        <SessionParlementaire>2017-2018</SessionParlementaire>
+        <SeanceNumero/>
+        <NumeroPremierePage>2851</NumeroPremierePage>
+        <LegislatureNumero>15</LegislatureNumero>
+        <PublicationPrix>3,90</PublicationPrix>
+        <Signataire>
+            <Titre>Le Directeur de l’information légale et administrative</Titre>
+            <Prenom>Bertrand</Prenom>
+            <Nom>MUNCH</Nom>
+        </Signataire>
+        <NumeroGrebiche>103180370-000418</NumeroGrebiche>
+    </Metadonnees>
+    <ContenuDANBlanc>
+        <?Folio 2853?>
+        <CompteRendu>
+            <Metadonnees>
+                <parution>2018037</parution>
+                <dateSeance>2018-04-12</dateSeance>
+                <numSeance>187</numSeance>
+                <numSeanceJour>1</numSeanceJour>
+                <typeAssemblee>AN</typeAssemblee>
+                <commentaire/>
+                <validite>valide</validite>
+            </Metadonnees>
+            <Contenu>
+                <Quantiemes>
+                    <Journee>Première séance du jeudi 12 avril 2018</Journee>
+                    <Session>Session ordinaire 2017-2018</Session>
+                </Quantiemes>
+                <?Folio 2854?>
+                <Sommaire>
+                    <PresidentSeance>Présidence de M. Hugues Renson</PresidentSeance>
+                    <Sommaire1>
+                        <TitreStruct Ident="w1aab2ab1ab1i00001">
+                            <Intitule Ident="w1aab2ab1ab1i00002">Accord France-Allemagne sur l’emploi transfrontalier d’aéronefs<LienInterneDocRef IdentRef="w1aab2ab1ab1i00136"> (p.</LienInterneDocRef>
+                            </Intitule>
+                        </TitreStruct>
+                        <Para Ident="w1aab2ab1ab1i00003"/>
+                        <Sommaire2>
+                            <TitreStruct Ident="w1aab2ab1ab1i00004">
+                                <Intitule Ident="w1aab2ab1ab1i00005">Vote sur l’article unique<LienInterneDocRef IdentRef="w1aab2ab1ab1i00144"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                        </Sommaire2>
+                    </Sommaire1>
+                    <Sommaire1>
+                        <TitreStruct Ident="w1aab2ab1ab1i00006">
+                            <Intitule Ident="w1aab2ab1ab1i00007">Protection des données personnelles<LienInterneDocRef IdentRef="w1aab2ab1ab1i00148"> (p.</LienInterneDocRef>
+                            </Intitule>
+                        </TitreStruct>
+                        <Para Ident="w1aab2ab1ab1i00008"/>
+                        <Sommaire2>
+                            <TitreStruct Ident="w1aab2ab1ab1i00009">
+                                <Intitule Ident="w1aab2ab1ab1i00010">Présentation<LienInterneDocRef IdentRef="w1aab2ab1ab1i00155"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                            <Para Ident="w1aab2ab1ab1i00011">M. Mounir Mahjoubi, secrétaire d’État chargé du numérique</Para>
+                            <Para Ident="w1aab2ab1ab1i00012">Mme Paula Forteza, rapporteure de la commission des lois constitutionnelles, de la législation et de l’administration générale de la République</Para>
+                        </Sommaire2>
+                        <Sommaire2>
+                            <TitreStruct Ident="w1aab2ab1ab1i00013">
+                                <Intitule Ident="w1aab2ab1ab1i00014">Motion de renvoi en commission<LienInterneDocRef IdentRef="w1aab2ab1ab1i00194"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                            <Para Ident="w1aab2ab1ab1i00015">M. Bastien Lachaud</Para>
+                            <Para Ident="w1aab2ab1ab1i00016">Mme Danièle Obono</Para>
+                            <Para Ident="w1aab2ab1ab1i00017">M. Stéphane Peu</Para>
+                            <Para Ident="w1aab2ab1ab1i00018">M. Rémy Rebeyrotte</Para>
+                            <Para Ident="w1aab2ab1ab1i00019">Mme Constance Le Grip</Para>
+                        </Sommaire2>
+                        <Sommaire2>
+                            <TitreStruct Ident="w1aab2ab1ab1i00020">
+                                <Intitule Ident="w1aab2ab1ab1i00021">Discussion générale<LienInterneDocRef IdentRef="w1aab2ab1ab1i00235"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                            <Para Ident="w1aab2ab1ab1i00022">Mme Danièle Obono</Para>
+                            <Para Ident="w1aab2ab1ab1i00023">M. Stéphane Peu</Para>
+                            <Para Ident="w1aab2ab1ab1i00024">Mme Christine Hennion</Para>
+                            <Para Ident="w1aab2ab1ab1i00025">Mme Constance Le Grip</Para>
+                            <Para Ident="w1aab2ab1ab1i00026">M. Philippe Latombe</Para>
+                            <Para Ident="w1aab2ab1ab1i00027">M. Pierre Morel-À-L’Huissier</Para>
+                            <Para Ident="w1aab2ab1ab1i00028">M. Rémy Rebeyrotte</Para>
+                            <Para Ident="w1aab2ab1ab1i00029">Mme Emmanuelle Ménard</Para>
+                            <Para Ident="w1aab2ab1ab1i00030">Mme Albane Gaillot</Para>
+                            <Para Ident="w1aab2ab1ab1i00031">M. Éric Bothorel</Para>
+                        </Sommaire2>
+                        <Sommaire2>
+                            <TitreStruct Ident="w1aab2ab1ab1i00032">
+                                <Intitule Ident="w1aab2ab1ab1i00033">Discussion des articles<LienInterneDocRef IdentRef="w1aab2ab1ab1i00393"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00034">
+                                    <Intitule Ident="w1aab2ab1ab1i00035">Article                                         <?A3B2 bk?>1                                        <Exposant Ident="w1aab2ab1ab1i00036">er</Exposant>                                        <?A3B2 ek?>
+                                        <LienInterneDocRef IdentRef="w1aab2ab1ab1i00396"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00037">
+                                    <Intitule Ident="w1aab2ab1ab1i00038">Article                                         <?A3B2 bk?>1                                        <Exposant Ident="w1aab2ab1ab1i00039">er </Exposant>                                        <?A3B2 ek?>
+                                        <Italique Ident="w1aab2ab1ab1i00040"> bis</Italique>
+                                        <LienInterneDocRef IdentRef="w1aab2ab1ab1i00401"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00041">
+                                    <Intitule Ident="w1aab2ab1ab1i00042">Article 2<LienInterneDocRef IdentRef="w1aab2ab1ab1i00407"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                                <Para Ident="w1aab2ab1ab1i00043">Amendements                                     <?A3B2 bk?>n                                    <Exposant Ident="w1aab2ab1ab1i00044">os</Exposant>                                    <?A3B2 ek?> 7, 1, 2</Para>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00045">
+                                    <Intitule Ident="w1aab2ab1ab1i00046">Article 2 <Italique Ident="w1aab2ab1ab1i00047"> bis,</Italique> 4 et 5<LienInterneDocRef IdentRef="w1aab2ab1ab1i00478"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00048">
+                                    <Intitule Ident="w1aab2ab1ab1i00049">Article 6<LienInterneDocRef IdentRef="w1aab2ab1ab1i00482"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                                <Para Ident="w1aab2ab1ab1i00050">Amendements                                     <?A3B2 bk?>n                                    <Exposant Ident="w1aab2ab1ab1i00051">os</Exposant>                                    <?A3B2 ek?> 3, 5, 14 rectifié</Para>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00052">
+                                    <Intitule Ident="w1aab2ab1ab1i00053">Article 6 <Italique Ident="w1aab2ab1ab1i00054"> bis</Italique>
+                                        <LienInterneDocRef IdentRef="w1aab2ab1ab1i00520"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00055">
+                                    <Intitule Ident="w1aab2ab1ab1i00056">Article 7<LienInterneDocRef IdentRef="w1aab2ab1ab1i00524"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                                <Para Ident="w1aab2ab1ab1i00057">Amendement                                     <?A3B2 bk?>n                                    <Exposant Ident="w1aab2ab1ab1i00058">o</Exposant>                                    <?A3B2 ek?> 4</Para>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00059">
+                                    <Intitule Ident="w1aab2ab1ab1i00060">Articles 8 A à 14 A<LienInterneDocRef IdentRef="w1aab2ab1ab1i00536"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00061">
+                                    <Intitule Ident="w1aab2ab1ab1i00062">Article 14<LienInterneDocRef IdentRef="w1aab2ab1ab1i00540"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                                <Para Ident="w1aab2ab1ab1i00063">Amendements                                     <?A3B2 bk?>n                                    <Exposant Ident="w1aab2ab1ab1i00064">os</Exposant>                                    <?A3B2 ek?> 10, 6, 9</Para>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00065">
+                                    <Intitule Ident="w1aab2ab1ab1i00066">Articles 14 <Italique Ident="w1aab2ab1ab1i00067"> bis </Italique> A à 17<LienInterneDocRef IdentRef="w1aab2ab1ab1i00612"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00068">
+                                    <Intitule Ident="w1aab2ab1ab1i00069">Article 17 <Italique Ident="w1aab2ab1ab1i00070"> bis</Italique>
+                                        <LienInterneDocRef IdentRef="w1aab2ab1ab1i00616"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                                <Para Ident="w1aab2ab1ab1i00071">Amendement                                     <?A3B2 bk?>n                                    <Exposant Ident="w1aab2ab1ab1i00072">o</Exposant>                                    <?A3B2 ek?> 12</Para>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00073">
+                                    <Intitule Ident="w1aab2ab1ab1i00074">Article 17 <Italique Ident="w1aab2ab1ab1i00075"> ter</Italique>
+                                        <LienInterneDocRef IdentRef="w1aab2ab1ab1i00651"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00076">
+                                    <Intitule Ident="w1aab2ab1ab1i00077">Articles 18 et 19<LienInterneDocRef IdentRef="w1aab2ab1ab1i00655"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00078">
+                                    <Intitule Ident="w1aab2ab1ab1i00079">Article 19 <Italique Ident="w1aab2ab1ab1i00080"> bis</Italique>
+                                        <LienInterneDocRef IdentRef="w1aab2ab1ab1i00658"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00081">
+                                    <Intitule Ident="w1aab2ab1ab1i00082">Article 19 <Italique Ident="w1aab2ab1ab1i00083"> ter</Italique>
+                                        <LienInterneDocRef IdentRef="w1aab2ab1ab1i00662"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                                <Para Ident="w1aab2ab1ab1i00084">Amendements                                     <?A3B2 bk?>n                                    <Exposant Ident="w1aab2ab1ab1i00085">os</Exposant>                                    <?A3B2 ek?> 13, 15 (sous-amendement)</Para>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00086">
+                                    <Intitule Ident="w1aab2ab1ab1i00087">Articles 20 à 23<LienInterneDocRef IdentRef="w1aab2ab1ab1i00689"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00088">
+                                    <Intitule Ident="w1aab2ab1ab1i00089">Article 23 <Italique Ident="w1aab2ab1ab1i00090"> bis</Italique>
+                                        <LienInterneDocRef IdentRef="w1aab2ab1ab1i00692"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                            </Sommaire3>
+                            <Sommaire3>
+                                <TitreStruct Ident="w1aab2ab1ab1i00091">
+                                    <Intitule Ident="w1aab2ab1ab1i00092">Article 24<LienInterneDocRef IdentRef="w1aab2ab1ab1i00696"> (p.</LienInterneDocRef>
+                                    </Intitule>
+                                </TitreStruct>
+                                <Para Ident="w1aab2ab1ab1i00093">M. Bruno Bonnell</Para>
+                                <Para Ident="w1aab2ab1ab1i00094">M. Philippe Gosselin</Para>
+                                <Para Ident="w1aab2ab1ab1i00095">Amendement                                     <?A3B2 bk?>n                                    <Exposant Ident="w1aab2ab1ab1i00096">o</Exposant>                                    <?A3B2 ek?> 11</Para>
+                            </Sommaire3>
+                        </Sommaire2>
+                        <Sommaire2>
+                            <TitreStruct Ident="w1aab2ab1ab1i00097">
+                                <Intitule Ident="w1aab2ab1ab1i00098">Explications de vote<LienInterneDocRef IdentRef="w1aab2ab1ab1i00730"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                            <Para Ident="w1aab2ab1ab1i00099">M. Philippe Gosselin</Para>
+                            <Para Ident="w1aab2ab1ab1i00100">M. Rémy Rebeyrotte</Para>
+                            <Para Ident="w1aab2ab1ab1i00101">Mme Danièle Obono</Para>
+                            <Para Ident="w1aab2ab1ab1i00102">M. Guy Bricout</Para>
+                            <Para Ident="w1aab2ab1ab1i00103">M. Philippe Latombe</Para>
+                        </Sommaire2>
+                        <Sommaire2>
+                            <TitreStruct Ident="w1aab2ab1ab1i00104">
+                                <Intitule Ident="w1aab2ab1ab1i00105">Vote sur l’ensemble<LienInterneDocRef IdentRef="w1aab2ab1ab1i00749"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                        </Sommaire2>
+                    </Sommaire1>
+                    <Sommaire1>
+                        <TitreStruct Ident="w1aab2ab1ab1i00106">
+                            <Intitule Ident="w1aab2ab1ab1i00107">Nouveau pacte ferroviaire<Italique Ident="w1aab2ab1ab1i00108"/>
+                            <LienInterneDocRef IdentRef="w1aab2ab1ab1i00754"> (p.</LienInterneDocRef>
+                        </Intitule>
+                    </TitreStruct>
+                    <Para Ident="w1aab2ab1ab1i00109"/>
+                    <Sommaire2>
+                        <TitreStruct Ident="w1aab2ab1ab1i00110">
+                            <Intitule Ident="w1aab2ab1ab1i00111">Discussion des articles<Italique Ident="w1aab2ab1ab1i00112"> (suite)</Italique>
+                                <LienInterneDocRef IdentRef="w1aab2ab1ab1i00762"> (p.</LienInterneDocRef>
+                            </Intitule>
+                        </TitreStruct>
+                        <Sommaire3>
+                            <TitreStruct Ident="w1aab2ab1ab1i00113">
+                                <Intitule Ident="w1aab2ab1ab1i00114">Article 4<Italique Ident="w1aab2ab1ab1i00115"> (suite)</Italique>
+                                    <LienInterneDocRef IdentRef="w1aab2ab1ab1i00767"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                            <Para Ident="w1aab2ab1ab1i00116">Amendement                                 <?A3B2 bk?>n                                <Exposant Ident="w1aab2ab1ab1i00117">o</Exposant>                                <?A3B2 ek?> 63</Para>
+                            <Para Ident="w1aab2ab1ab1i00118">M. Jean-Baptiste Djebbari, rapporteur de la commission du développement durable et de l’aménagement du territoire</Para>
+                            <Para Ident="w1aab2ab1ab1i00119">Mme Élisabeth Borne, ministre chargée des transports</Para>
+                            <?Folio 2855?>
+                            <Para Ident="w1aab2ab1ab1i00120">Amendement                                 <?A3B2 bk?>n                                <Exposant Ident="w1aab2ab1ab1i00121">o</Exposant>                                <?A3B2 ek?> 62</Para>
+                        </Sommaire3>
+                        <Sommaire3>
+                            <TitreStruct Ident="w1aab2ab1ab1i00122">
+                                <Intitule Ident="w1aab2ab1ab1i00123">Après l’article 4<LienInterneDocRef IdentRef="w1aab2ab1ab1i00830"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                            <Para Ident="w1aab2ab1ab1i00124">Amendements                                 <?A3B2 bk?>n                                <Exposant Ident="w1aab2ab1ab1i00125">os</Exposant>                                <?A3B2 ek?> 156, 157, 202</Para>
+                            <Para Ident="w1aab2ab1ab1i00126">M. Damien Adam, rapporteur pour avis de la commission des affaires économiques</Para>
+                        </Sommaire3>
+                        <Sommaire3>
+                            <TitreStruct Ident="w1aab2ab1ab1i00127">
+                                <Intitule Ident="w1aab2ab1ab1i00128">Article 5<LienInterneDocRef IdentRef="w1aab2ab1ab1i00890"> (p.</LienInterneDocRef>
+                                </Intitule>
+                            </TitreStruct>
+                            <Para Ident="w1aab2ab1ab1i00129">Amendement                                 <?A3B2 bk?>n                                <Exposant Ident="w1aab2ab1ab1i00130">o</Exposant>                                <?A3B2 ek?> 80</Para>
+                        </Sommaire3>
+                    </Sommaire2>
+                </Sommaire1>
+                <Sommaire1>
+                    <TitreStruct Ident="w1aab2ab1ab1i00131">
+                        <Intitule Ident="w1aab2ab1ab1i00132">Ordre du jour de la prochaine séance<LienInterneDocRef IdentRef="w1aab2ab1ab1i00900"> (p.</LienInterneDocRef>
+                        </Intitule>
+                    </TitreStruct>
+                </Sommaire1>
+            </Sommaire>
+            <PresidentSeance idsyceron="1234030">Présidence de M. Hugues Renson</PresidentSeance>
+            <PresidentSeance>
+                <QualitePresident>vice-président</QualitePresident>
+            </PresidentSeance>
+            <Para Ident="w1aab2ab1ab1i00133" idsyceron="1234031">
+                <Orateur href="http://www.assemblee-nationale.fr/15/tribun/fiches_id/721824.asp">
+                    <Nom>M. le président.</Nom>
+                </Orateur> La séance est ouverte.</Para>
+            <Nota Ident="w1aab2ab1ab1i00134" idsyceron="1234032">(La séance est ouverte à neuf heures trente.)</Nota>
+            <Section>

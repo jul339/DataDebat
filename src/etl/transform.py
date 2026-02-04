@@ -341,7 +341,7 @@ class ANDebatsTransformer:
         documents = []
 
         # Chercher toutes les sections
-        for section in root.findall(".//Section"):
+        for section in root.findall(".//CompteRendu/Contenu/Section"):
             section_data = metadata.copy()
 
             # Titre de section
