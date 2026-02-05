@@ -18,16 +18,39 @@ class ESConnection:
         Args:
             es_host: URL du serveur Elasticsearch
         """
+        # #region agent log
+        _log = lambda **kw: open("/home/jules/DataDebat/.cursor/debug.log", "a").write(__import__("json").dumps({"sessionId": "debug-session", "runId": "run1", "timestamp": __import__("time").time(), "location": "es_connection.py:__init__", **kw}) + "\n") or None
+        _log(message="ESConnection __init__ entry", data={"es_host": es_host}, hypothesisId="B")
+        # #endregion
         self.es = Elasticsearch(es_host)
         self.index_name = "debats_assemblee_nationale"
         
         # Vérifier la connexion
         try:
+            # #region agent log
+            _log(message="before ping", data={"es_host": es_host}, hypothesisId="A")
+            # #endregion
             if self.es.ping():
                 print(f"✓ Connexion établie avec Elasticsearch")
             else:
-                raise ConnectionError("Impossible de se connecter à Elasticsearch")
+                # #region agent log
+                _log(message="ping returned False", data={"es_host": es_host}, hypothesisId="A")
+                # #endregion
+                detail = ""
+                try:
+                    r = self.es.info()
+                    detail = f" (réponse: {r})"
+                except Exception as info_err:
+                    detail = f" (info erreur: {info_err})"
+                raise ConnectionError(
+                    "Impossible de se connecter à Elasticsearch. "
+                    "Vérifiez que le service est démarré (ex: docker compose up -d)."
+                    f"{detail}"
+                )
         except Exception as e:
+            # #region agent log
+            _log(message="exception in ping", data={"es_host": es_host, "exception_type": type(e).__name__, "exception_msg": str(e), "exception_args": getattr(e, "args", ())}, hypothesisId="C")
+            # #endregion
             raise ConnectionError(f"Erreur de connexion à Elasticsearch: {e}")
     
     def create_index(self):

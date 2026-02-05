@@ -1,13 +1,13 @@
 {
-  "start_time": "2025-11-28T15:55:31.219653",
-  "end_time": "2025-11-28T15:56:16.393100",
-  "duration_seconds": 45.173447,
+  "start_time": "2025-12-10T12:05:10.513474",
+  "end_time": "2025-12-10T12:06:48.992381",
+  "duration_seconds": 98.478907,
   "statistics": {
     "total": 833,
     "success": 831,
     "failed": 2,
     "skipped": 0,
-    "documents_indexed": 214361
+    "documents_indexed": 637217
   },
   "errors": [
     {

@@ -15,22 +15,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from etl.transform import ANDebatsTransformer
 
 
-def extraire_idsyceron_xml(xml_path):
+def extraire_idsyceron_root(root: ET.Element):
     """
-    Extrait tous les idsyceron des éléments Para du fichier XML brut
+    Extrait tous les idsyceron du XML (élément racine).
 
     Args:
-        xml_path: Chemin vers le fichier XML
+        root: Élément racine du XML (ET.Element)
 
     Returns:
         Liste des idsyceron trouvés
     """
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
-
     idsyceron_list = []
-
-    # Chercher tous les éléments avec un attribut idsyceron
     for element in root.iter():
         if "idsyceron" in element.attrib:
             idsyceron = element.attrib["idsyceron"]
@@ -41,8 +36,39 @@ def extraire_idsyceron_xml(xml_path):
                     "ident": element.attrib.get("Ident", ""),
                 }
             )
-
     return idsyceron_list
+
+
+def extraire_idsyceron_xml(xml_path):
+    """
+    Extrait tous les idsyceron des éléments du fichier XML brut.
+
+    Args:
+        xml_path: Chemin vers le fichier XML
+
+    Returns:
+        Liste des idsyceron trouvés
+    """
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+    return extraire_idsyceron_root(root)
+
+
+def extraire_idsyceron_depuis_taz(taz_path):
+    """
+    Extrait tous les idsyceron depuis un fichier TAZ (XML extrait du .taz).
+
+    Args:
+        taz_path: Chemin vers le fichier .taz
+
+    Returns:
+        Liste des idsyceron trouvés, ou liste vide si erreur
+    """
+    transformer = ANDebatsTransformer()
+    root, _ = transformer.extract_xml_from_taz(str(taz_path))
+    if root is None:
+        return []
+    return extraire_idsyceron_root(root)
 
 
 def extraire_para_id_json(json_path):
@@ -199,25 +225,19 @@ def afficher_comparaison(comparaison, xml_ids, json_ids):
 
 
 if __name__ == "__main__":
-    # Chemins des fichiers
-    xml_path = (
-        Path(__file__).parent.parent
-        / "convert_xml_files"
-        / "CRI_20180413_037_formatted.xml"
-    )
-    json_path = (
-        Path(__file__).parent.parent
-        / "data"
-        / "transformed"
-        / "2018"
-        / "2018-04-12.json"
-    )
+    # Comparaison TAZ ↔ JSON transformé
+    base = Path(__file__).parent.parent
+    taz_path = base / "data" / "raw" / "2018" / "AN_2018001.taz"
+    json_path = base / "data" / "transformed" / "2018" / "2018-01-16.json"
 
-    print(f"Extraction des idsyceron depuis: {xml_path.name}")
-    print(f"Extraction des para_id depuis:   {json_path.name}")
+    print(f"Extraction des idsyceron depuis le TAZ: {taz_path.name}")
+    print(f"Extraction des para_id depuis le JSON: {json_path.name}")
 
-    # Extraire les IDs
-    xml_ids = extraire_idsyceron_xml(xml_path)
+    # Extraire les IDs depuis le TAZ (XML contenu dans le .taz)
+    xml_ids = extraire_idsyceron_depuis_taz(taz_path)
+    if not xml_ids:
+        print("⚠ Impossible d'extraire le XML du TAZ ou aucun idsyceron trouvé. Vérifiez le chemin du TAZ.")
+        raise SystemExit(1)
     json_ids = extraire_para_id_json(json_path)
 
     # Comparer
@@ -228,7 +248,7 @@ if __name__ == "__main__":
 
     # Sauvegarder le rapport détaillé
     rapport = {
-        "fichiers": {"xml": str(xml_path), "json": str(json_path)},
+        "fichiers": {"taz": str(taz_path), "json": str(json_path)},
         "statistiques": {
             "total_xml": comparaison["total_xml"],
             "total_json": comparaison["total_json"],
