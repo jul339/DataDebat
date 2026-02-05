@@ -313,8 +313,16 @@ class ANDebatsTransformer:
                 )
                 existing_docs = []
 
-        # Fusionner les documents existants avec les nouveaux
-        if save_transform_file:
+        # Fusionner les documents existants avec les nouveaux (sans dupliquer par para_id)
+        if save_transform_file and existing_docs:
+            existing_ids = {doc.get("para_id") for doc in existing_docs if doc.get("para_id")}
+            new_docs = [doc for doc in filtered_docs if doc.get("para_id") not in existing_ids]
+            all_docs = existing_docs + new_docs
+            if len(new_docs) < len(filtered_docs):
+                print(
+                    f"⚠ {len(filtered_docs) - len(new_docs)} doublon(s) évité(s) (para_id déjà présents)"
+                )
+        elif save_transform_file:
             all_docs = existing_docs + filtered_docs
         else:
             all_docs = filtered_docs
@@ -323,8 +331,9 @@ class ANDebatsTransformer:
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(all_docs, f, indent=2, ensure_ascii=False)
 
+        added = len(all_docs) - len(existing_docs) if save_transform_file and existing_docs else len(filtered_docs)
         print(
-            f"✓ {len(filtered_docs)} nouveaux documents ajoutés ({len(all_docs)} documents au total) dans {output_file}"
+            f"✓ {added} document(s) ajouté(s) ({len(all_docs)} au total) dans {output_file}"
         )
 
     def extract_sections(self, root: ET.Element, metadata: Dict) -> List[Dict]:
@@ -476,8 +485,9 @@ class ANDebatsTransformer:
             # Étape 4: Sauvegarder en JSON
 
             year = metadata.get("annee", "unknown")
+            raw_basename = Path(taz_path).stem
             output_file = (
-                f"{output_dir}/{year}/{metadata.get('date_seance', 'N/A')}.json"
+                f"{output_dir}/{year}/{raw_basename}_{metadata.get('date_seance', 'N/A')}.json"
             )
             self.save_documents_to_file(documents, output_file, save_transform_file)
 
