@@ -281,7 +281,7 @@ class ETLOrchestrator:
         #         index_to_es=index_to_es
         #     )
 
-        return stats
+        # return stats
 
     # def run_batch_directory(self, directory: str, parallel: bool = True,
     #                         max_workers: int = 10, skip_existing: bool = True,
