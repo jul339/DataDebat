@@ -234,87 +234,6 @@ class ETLOrchestrator:
 
         return all_documents
 
-        # ========== BATCH LOADING ==========
-        # #
-        # def run_batch(self, years: List[int] = None, download: bool = False,
-        #               parallel: bool = True, max_workers: int = 3,
-        #               skip_existing: bool = True, index_to_es: bool = True) -> dict:
-        #     """
-        #     Exécute le pipeline ETL en mode batch avec progression et parallélisme
-
-        #     Args:
-        #         years: Liste des années à traiter (None = toutes celles présentes)
-        #         download: Si True, télécharge d'abord les fichiers
-        #         parallel: Si True, traite les fichiers en parallèle
-        #         max_workers: Nombre de workers pour le traitement parallèle
-        #         skip_existing: Si True, skip les fichiers déjà indexés
-        #         index_to_es: Si True, indexe dans Elasticsearch
-
-        #     Returns:
-        #         Statistiques du traitement batch
-        #     """
-        #     print(f"\n{'='*60}")
-        #     print(f"🚀 ETL BATCH: Traitement de masse")
-        #     print(f"{'='*60}")
-
-        #     # Extract (optionnel)
-        #     if download and years:
-        #         self.extract(years)
-
-        #     # Créer le BatchLoader avec les composants existants
-        #     batch_loader = BatchLoader(
-        #         es_conn=self.es_conn,
-        #         transformer=self.transformer,
-        #         max_workers=max_workers,
-        #         transformed_dir=self.transformed_dir
-        #     )
-
-        #     # Convertir les années en strings si fournies
-        #     years_str = [str(y) for y in years] if years else None
-
-        #     # Lancer le batch loading
-        #     stats = batch_loader.run(
-        #         base_dir=self.raw_dir,
-        #         parallel=parallel,
-        #         skip_existing=skip_existing,
-        #         years=years_str,
-        #         index_to_es=index_to_es
-        #     )
-
-        return stats
-
-    # def run_batch_directory(self, directory: str, parallel: bool = True,
-    #                         max_workers: int = 10, skip_existing: bool = True,
-    #                         index_to_es: bool = True) -> dict:
-    #     """
-    #     Exécute le batch loading sur un répertoire spécifique
-
-    #     Args:
-    #         directory: Répertoire contenant les fichiers TAZ
-    #         parallel: Si True, traite les fichiers en parallèle
-    #         max_workers: Nombre de workers
-    #         skip_existing: Skip les fichiers déjà indexés
-    #         index_to_es: Indexer dans Elasticsearch
-
-    #     Returns:
-    #         Statistiques du traitement
-    #     """
-    #     batch_loader = BatchLoader(
-    #         es_conn=self.es_conn,
-    #         transformer=self.transformer,
-    #         max_workers=max_workers,
-    #         transformed_dir=self.transformed_dir
-    #     )
-
-    #     return batch_loader.run(
-    #         base_dir=directory,
-    #         parallel=parallel,
-    #         skip_existing=skip_existing,
-    #         index_to_es=index_to_es
-    #     )
-
-    # ========== STATISTIQUES ==========
-
     def get_stats(self) -> dict:
         """
         Retourne les statistiques du pipeline
@@ -342,18 +261,18 @@ def main():
     orchestrator = ETLOrchestrator()
 
     # Setup de l'index (recreate=True pour repartir de zéro)
-    orchestrator.setup_index(recreate=True)
+    # orchestrator.setup_index(recreate=True)
 
     # Option 1: Traiter un seul fichier
     # orchestrator.run_etl_file("./data/raw/2022/AN_2022002.taz")
 
     # Option 2: Traiter une année complète
-    # orchestrator.run_etl_year(2024, download=True, index_to_es=True)
+    orchestrator.run_etl_year(2019, download=False, index_to_es=False)
 
     # Option 3: Traiter plusieurs années avec téléchargement (ancien mode)
-    orchestrator.run_etl_years(
-        [2018, 2019, 2020], download=False, index_to_es=True, save_transform_file=True
-    )
+    # orchestrator.run_etl_years(
+    #     [2018, 2019, 2020], download=False, index_to_es=True, save_transform_file=True
+    # )
 
     # Option 4: Mode BATCH - traitement parallèle avec progression (recommandé)
     # orchestrator.run_batch(
