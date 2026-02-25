@@ -3,9 +3,18 @@ Module de connexion et d'indexation Elasticsearch
 Pour l'analyse des débats de l'Assemblée Nationale
 """
 
+import re
 from elasticsearch import Elasticsearch, helpers
 from elasticsearch.exceptions import ConnectionError, RequestError
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
+
+
+def _clean_orateur_nom(s: str) -> str:
+    """Enlève le préfixe M. / Mme, le point ou la virgule finale du nom d'orateur."""
+    s = re.sub(r"^(M\.|Mme)\s*", "", s.strip())
+    while s and s[-1] in ".,":
+        s = s[:-1].strip()
+    return s
 
 
 class ESConnection:
@@ -198,6 +207,36 @@ class ESConnection:
         """
         count = self.es.count(index=self.index_name)
         return count['count']
+
+    def get_stats_by_year(self) -> List[Dict]:
+        """
+        Retourne le nombre d'interventions et le nombre de para_id uniques par année.
+
+        Returns:
+            Liste de dicts avec annee, nb_interventions, nb_para_id_uniques.
+        """
+        response = self.es.search(
+            index=self.index_name,
+            size=0,
+            query={"match_all": {}},
+            aggs={
+                "by_year": {
+                    "terms": {"field": "annee", "size": 100},
+                    "aggs": {
+                        "unique_para_id": {"cardinality": {"field": "para_id.keyword"}}
+                    },
+                }
+            },
+        )
+        buckets = response.get("aggregations", {}).get("by_year", {}).get("buckets", [])
+        return [
+            {
+                "annee": int(b["key"]),
+                "nb_interventions": b["doc_count"],
+                "nb_para_id_uniques": b["unique_para_id"]["value"],
+            }
+            for b in buckets
+        ]
     
     def get_word_count(self, doc_id: str, field: str = "texte") -> int:
         """
@@ -259,7 +298,81 @@ class ESConnection:
             raise RuntimeError(f"Erreur lors du comptage des mots pour {date_seance}: {e}") from e
         
         return int(response.get("aggregations", {}).get("word_count", {}).get("value", 0))
-    
+
+    def get_dates_for_para_ids(
+        self, para_ids: List[str], date_field: str = "date_seance"
+    ) -> Dict[str, Optional[str]]:
+        """
+        Récupère la date (ex. date_seance) pour une liste de para_id via mget.
+
+        Args:
+            para_ids: Liste d'identifiants de paragraphes (strings).
+            date_field: Champ date à retourner (défaut: "date_seance").
+
+        Returns:
+            Dict para_id -> date (string ou None si absent).
+        """
+        if not para_ids:
+            return {}
+        ids = [str(pid) for pid in para_ids]
+        try:
+            response = self.es.mget(
+                index=self.index_name,
+                body={"ids": ids},
+                _source=[date_field],
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Erreur mget pour les para_id: {e}"
+            ) from e
+        out = {}
+        for doc in response.get("docs", []):
+            pid = doc.get("_id", "")
+            if doc.get("found") and doc.get("_source"):
+                out[pid] = doc["_source"].get(date_field)
+            else:
+                out[pid] = None
+        return out
+
+    def get_field_for_para_ids(
+        self, para_ids: List[str], field_name: str
+    ) -> Dict[str, Optional[Any]]:
+        """
+        Récupère un champ (ex. orateur_nom) pour une liste de para_id via mget.
+        Pour orateur_nom : supprime le préfixe "M." / "Mme" et le point final.
+
+        Args:
+            para_ids: Liste d'identifiants de paragraphes (strings).
+            field_name: Nom du champ à retourner (ex. "orateur_nom").
+
+        Returns:
+            Dict para_id -> valeur du champ (ou None si absent).
+        """
+        if not para_ids:
+            return {}
+        ids = [str(pid) for pid in para_ids]
+        try:
+            response = self.es.mget(
+                index=self.index_name,
+                body={"ids": ids},
+                _source=[field_name],
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Erreur mget pour les para_id: {e}"
+            ) from e
+        out = {}
+        for doc in response.get("docs", []):
+            pid = doc.get("_id", "")
+            if doc.get("found") and doc.get("_source"):
+                val = doc["_source"].get(field_name)
+                if field_name == "orateur_nom" and isinstance(val, str):
+                    val = _clean_orateur_nom(val)
+                out[pid] = val
+            else:
+                out[pid] = None
+        return out
+
     def count_documents_without_text(self, field: str = "texte") -> int:
         """
         Compte le nombre de documents qui n'ont pas le champ texte renseigné
@@ -358,3 +471,44 @@ class ESConnection:
             ) from e
         
         return int(response.get("count", 0))
+
+    def get_interventions_containing_word(
+        self, word: Optional[str] = None, field: str = "texte", scroll_size: int = 1000
+    ) -> List[Dict]:
+        """
+        Récupère les interventions. Si word est fourni, filtre par match analysé sur le champ;
+        sinon retourne toutes les interventions (scroll).
+
+        Args:
+            word: Mot à chercher (analyseur french). None = toutes les interventions.
+            field: Champ texte à interroger (défaut: "texte").
+            scroll_size: Nombre de hits par requête de scroll.
+
+        Returns:
+            Liste des _source des documents trouvés.
+        """
+        query = {"match": {field: word}} if word else {"match_all": {}}
+        results = []
+        try:
+            response = self.es.search(
+                index=self.index_name,
+                scroll="2m",
+                size=scroll_size,
+                query=query,
+                _source=True,
+            )
+            scroll_id = response.get("_scroll_id")
+            hits = response.get("hits", {}).get("hits", [])
+            results.extend(hit["_source"] for hit in hits)
+            while len(hits) == scroll_size:
+                response = self.es.scroll(scroll_id=scroll_id, scroll="2m")
+                scroll_id = response.get("_scroll_id")
+                hits = response.get("hits", {}).get("hits", [])
+                results.extend(hit["_source"] for hit in hits)
+            if scroll_id:
+                self.es.clear_scroll(scroll_id=scroll_id, ignore=(404,))
+        except Exception as e:
+            raise RuntimeError(
+                f"Erreur lors de la récupération des interventions: {e}"
+            ) from e
+        return results

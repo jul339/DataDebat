@@ -267,21 +267,24 @@ def main():
     # orchestrator.run_etl_file("./data/raw/2022/AN_2022002.taz")
 
     # Option 2: Traiter une année complète
-    orchestrator.run_etl_year(2019, download=False, index_to_es=False)
+    # orchestrator.run_etl_year(2019, download=False, index_to_es=False)
 
     # Option 3: Traiter plusieurs années avec téléchargement (ancien mode)
-    # orchestrator.run_etl_years(
-    #     [2018, 2019, 2020], download=False, index_to_es=True, save_transform_file=True
-    # )
+    orchestrator.run_etl_years(
+        [2025, 2026],
+        download=True,
+        index_to_es=True,
+        save_transform_file=True,
+    )
 
     # Option 4: Mode BATCH - traitement parallèle avec progression (recommandé)
     # orchestrator.run_batch(
-    #     years=[2018, 2019, 2020, 2021, 2022, 2023],
+    #     years=[2024, 2025, 2026],
     #     download=True,
     #     parallel=True,
     #     max_workers=10,
     #     skip_existing=True,
-    #     index_to_es=True
+    #     index_to_es=True,
     # )
 
     # Option 5: Juste transformer sans indexer

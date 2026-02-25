@@ -315,8 +315,12 @@ class ANDebatsTransformer:
 
         # Fusionner les documents existants avec les nouveaux (sans dupliquer par para_id)
         if save_transform_file and existing_docs:
-            existing_ids = {doc.get("para_id") for doc in existing_docs if doc.get("para_id")}
-            new_docs = [doc for doc in filtered_docs if doc.get("para_id") not in existing_ids]
+            existing_ids = {
+                doc.get("para_id") for doc in existing_docs if doc.get("para_id")
+            }
+            new_docs = [
+                doc for doc in filtered_docs if doc.get("para_id") not in existing_ids
+            ]
             all_docs = existing_docs + new_docs
             if len(new_docs) < len(filtered_docs):
                 print(
@@ -331,7 +335,11 @@ class ANDebatsTransformer:
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(all_docs, f, indent=2, ensure_ascii=False)
 
-        added = len(all_docs) - len(existing_docs) if save_transform_file and existing_docs else len(filtered_docs)
+        added = (
+            len(all_docs) - len(existing_docs)
+            if save_transform_file and existing_docs
+            else len(filtered_docs)
+        )
         print(
             f"✓ {added} document(s) ajouté(s) ({len(all_docs)} au total) dans {output_file}"
         )
@@ -486,12 +494,10 @@ class ANDebatsTransformer:
 
             year = metadata.get("annee", "unknown")
             raw_basename = Path(taz_path).stem
-            output_file = (
-                f"{output_dir}/{year}/{raw_basename}_{metadata.get('date_seance', 'N/A')}.json"
-            )
+            output_file = f"{output_dir}/{year}/{raw_basename}_{metadata.get('date_seance', 'N/A')}.json"
             self.save_documents_to_file(documents, output_file, save_transform_file)
 
-            print(f"✓ {len(documents)} interventions extraites")
+            # print(f"✓ {len(documents)} interventions extraites")
 
             return documents
 
@@ -518,7 +524,7 @@ class ANDebatsTransformer:
         Returns:
             Liste de tous les documents extraits
         """
-        taz_files = list(Path(directory).glob("*.taz"))
+        taz_files = sorted(Path(directory).glob("*.taz"))
 
         if not taz_files:
             print(f"⚠ Aucun fichier .taz trouvé dans {directory}")
