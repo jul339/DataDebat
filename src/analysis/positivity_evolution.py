@@ -5,6 +5,7 @@ Usage:
   python -m src.analysis.positivity_evolution --test "Une phrase."
   python -m src.analysis.positivity_evolution [--word sécurité]
 """
+
 import argparse
 from pathlib import Path
 
@@ -86,7 +87,7 @@ def run_full(word: str | None):
         all_probs.extend(sentiment_scores_batch(batch, model, tokenizer))
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = OUT_DIR / "sentiments.csv"
+    out_path = OUT_DIR / "sentiments2.csv"
     cols = ",".join(["para_id"] + list(LABELS))
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(cols + "\n")
@@ -99,8 +100,15 @@ def run_full(word: str | None):
 
 def main():
     parser = argparse.ArgumentParser(description="Score de sentiment des interventions")
-    parser.add_argument("--test", type=str, metavar="PHRASE", help="Tester sur une seule phrase")
-    parser.add_argument("--word", type=str, default=None, help="Filtrer les interventions par mot (défaut: toutes)")
+    parser.add_argument(
+        "--test", type=str, metavar="PHRASE", help="Tester sur une seule phrase"
+    )
+    parser.add_argument(
+        "--word",
+        type=str,
+        default=None,
+        help="Filtrer les interventions par mot (défaut: toutes)",
+    )
     args = parser.parse_args()
 
     if args.test is not None:

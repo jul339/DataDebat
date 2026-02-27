@@ -94,3 +94,7 @@
 {"sessionId": "debug-session", "runId": "run1", "timestamp": 1772215265.882181, "location": "es_connection.py:__init__", "message": "before ping", "data": {"es_host": "http://localhost:9200"}, "hypothesisId": "A"}
 {"sessionId": "debug-session", "runId": "run1", "timestamp": 1772215384.253226, "location": "es_connection.py:__init__", "message": "ESConnection __init__ entry", "data": {"es_host": "http://localhost:9200"}, "hypothesisId": "B"}
 {"sessionId": "debug-session", "runId": "run1", "timestamp": 1772215384.2545705, "location": "es_connection.py:__init__", "message": "before ping", "data": {"es_host": "http://localhost:9200"}, "hypothesisId": "A"}
+{"sessionId": "debug-session", "runId": "run1", "timestamp": 1772215850.9372642, "location": "es_connection.py:__init__", "message": "ESConnection __init__ entry", "data": {"es_host": "http://localhost:9200"}, "hypothesisId": "B"}
+{"sessionId": "debug-session", "runId": "run1", "timestamp": 1772215850.93864, "location": "es_connection.py:__init__", "message": "before ping", "data": {"es_host": "http://localhost:9200"}, "hypothesisId": "A"}
+{"sessionId": "debug-session", "runId": "run1", "timestamp": 1772216612.680807, "location": "es_connection.py:__init__", "message": "ESConnection __init__ entry", "data": {"es_host": "http://localhost:9200"}, "hypothesisId": "B"}
+{"sessionId": "debug-session", "runId": "run1", "timestamp": 1772216612.6989014, "location": "es_connection.py:__init__", "message": "before ping", "data": {"es_host": "http://localhost:9200"}, "hypothesisId": "A"}
