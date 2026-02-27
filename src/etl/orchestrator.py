@@ -267,12 +267,12 @@ def main():
     # orchestrator.run_etl_file("./data/raw/2022/AN_2022002.taz")
 
     # Option 2: Traiter une année complète
-    # orchestrator.run_etl_year(2019, download=False, index_to_es=False)
+    # orchestrator.run_etl_year(2021, download=False, index_to_es=True)
 
     # Option 3: Traiter plusieurs années avec téléchargement (ancien mode)
     orchestrator.run_etl_years(
-        [2025, 2026],
-        download=True,
+        [2014, 2015],
+        download=False,
         index_to_es=True,
         save_transform_file=True,
     )
