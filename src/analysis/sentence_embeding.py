@@ -50,7 +50,7 @@ print(f"Nombre de textes: {len(textes)}")
 # Charger le modèle
 print("Chargement du modèle...")
 model = SentenceTransformer(
-    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    "CATIE-AQ/camembert-base-embedding"
 )
 
 # Encoder par batches pour éviter la surcharge mémoire
@@ -60,43 +60,30 @@ embeddings_list = []
 
 for i in tqdm(range(0, len(textes), batch_size), desc="Encodage"):
     batch = textes[i : i + batch_size]
-    batch_embeddings = model.encode(batch, show_progress_bar=False)
+    batch_embeddings = model.encode(batch, show_progress_bar=False, normalize_embeddings=True)
     embeddings_list.append(batch_embeddings)
 
 # Concaténer tous les embeddings
 embeddings = np.vstack(embeddings_list)
 print(f"✓ {len(embeddings)} embeddings générés (dimension: {embeddings.shape[1]})")
-
+assert embeddings.shape[0] == len(textes)
+assert embeddings.ndim == 2
 # Tokeniser pour la recherche de mots
 sentences_tokens = [tokenizer(texte) for texte in textes]
 
-from sklearn.metrics.pairwise import cosine_similarity
+output_dir = Path("data/embeddings")
+output_dir.mkdir(parents=True, exist_ok=True)
 
-if WORD not in set(w for s in sentences_tokens for w in s):
-    print(f"Mot '{WORD}' non trouvé dans le corpus extrait.")
-else:
-    # Créer un vocabulaire (mot -> index dans l'embedding)
-    vocab = {}
-    word_vectors = []
-    for s_embed, s_tokens in zip(embeddings, sentences_tokens):
-        for word in s_tokens:
-            if word not in vocab:
-                vocab[word] = len(word_vectors)
-                word_vectors.append(
-                    s_embed
-                )  # Approche simple: utilise le vecteur de la phrase contenant le mot
+output_path = output_dir / f"embeddings_{ANNEE}.npz"
 
-    # Génère une matrice (nb_mots, dim)
-    word_vectors = np.array(word_vectors)
-    if WORD not in vocab:
-        print(f"Le mot '{WORD}' n'a pas pu être associé à une phrase.")
-    else:
-        idx_word = vocab[WORD]
-        vec_word = word_vectors[idx_word].reshape(1, -1)
-        sims = cosine_similarity(vec_word, word_vectors)[0]
-        top_indices = sims.argsort()[::-1][1:11]  # On saute le mot lui-même
+np.savez(
+    output_path,
+    embeddings=embeddings,
+    annee=ANNEE,
+    nb_textes=len(textes),
+)
 
-        inv_vocab = {i: w for w, i in vocab.items()}
-        print(f"\nLes mots les plus proches de '{WORD}' (embedding de phrase):")
-        for i in top_indices:
-            print(f"  {inv_vocab[i]:25s}: similarité = {sims[i]:.4f}")
+print(f"✓ Embeddings sauvegardés dans : {output_path}")
+
+# data = np.load("data/embeddings/embeddings_2018.npz")
+# embeddings = data["embeddings"]
